@@ -148,31 +148,28 @@
   "partners": [
     {
       "name": "PT Foundation",
-      "url": "https://ptfmalaysia.org/v2/",
-      "logo": "/uploads/1794384490656-pt-foundation.png"
+      "url": "https://ptfmalaysia.org/",
+      "logo": "/uploads/1794384262064-pt-foundation.png"
     },
     {
       "name": "Malaysian AIDs Council",
       "url": "https://mac.org.my/v4/mac-care/",
-      "logo": "/uploads/1794384506416-malaysian-aids-council.png"
+      "logo": ""
     },
     {
       "name": "[Collaborator 3]",
       "url": "",
-      "logo": "",
-      "hidden": true
+      "logo": ""
     },
     {
       "name": "[Collaborator 4]",
       "url": "",
-      "logo": "",
-      "hidden": true
+      "logo": ""
     },
     {
       "name": "[Collaborator 5]",
       "url": "",
-      "logo": "",
-      "hidden": true
+      "logo": ""
     }
   ],
   "themes": [
@@ -284,11 +281,11 @@
   },
   "team": [
     {
-      "name": "Associate Professor Dr. Lau Poh Li",
+      "name": "Assoc. Prof. Dr. Lau Poh Li",
       "group": "Supervisors",
       "color": "Auto",
       "role": "Supervisor",
-      "aff": "Department of Educational Psychology & Counseling",
+      "aff": "[Department]",
       "bio": "[What the supervisor oversees on the program.]",
       "email": "janicepolly@um.edu.my",
       "web": "",
@@ -299,9 +296,9 @@
       "name": "Brendon Ban",
       "group": "Research team",
       "color": "Auto",
-      "role": "[Role]",
-      "aff": "[Programme, Department]",
-      "bio": "[Short bio: background, and what you lead on THREAD.]",
+      "role": "PI",
+      "aff": "Master's student, Universiti Malaya",
+      "bio": "",
       "email": "22059169@siswa.um.edu.my",
       "web": "https://brendonban.io",
       "linkedin": "",

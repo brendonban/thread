@@ -30,13 +30,13 @@
     "pubsIntro": "Papers, protocols and talks from the program, including work in preparation and planned outputs.",
     "blogTitle": "Blog",
     "aboutTitle": "Research team",
-    "aboutIntro": "The people behind THREAD, a research program at [Institution].",
+    "aboutIntro": "The people behind THREAD, a research program at Department of Educational Psychology & Counseling.",
     "involvedTitle": "Getting involved",
     "involvedSummaryTitle": "Bottom line: what opportunities currently exist?",
     "involvedSummaryNote": "The summary as of today. Read below for the details.",
     "alumniTitle": "Alumni",
     "collabTitle": "Collaborators",
-    "collabNote": "",
+    "collabNote": "There are many but who is counting?",
     "blogIntro": "Short posts on what we are doing, why, and what we are learning along the way.",
     "researchIntro": "Our projects look at how culture, faith, family and stigma shape HIV testing, disclosure and care in Malaysia."
   },
@@ -148,28 +148,31 @@
   "partners": [
     {
       "name": "PT Foundation",
-      "url": "https://ptfmalaysia.org/",
-      "logo": "/uploads/1794384262064-pt-foundation.png"
+      "url": "https://ptfmalaysia.org/v2/",
+      "logo": "/uploads/1794384490656-pt-foundation.png"
     },
     {
       "name": "Malaysian AIDs Council",
       "url": "https://mac.org.my/v4/mac-care/",
-      "logo": ""
+      "logo": "/uploads/1794384506416-malaysian-aids-council.png"
     },
     {
       "name": "[Collaborator 3]",
       "url": "",
-      "logo": ""
+      "logo": "",
+      "hidden": true
     },
     {
       "name": "[Collaborator 4]",
       "url": "",
-      "logo": ""
+      "logo": "",
+      "hidden": true
     },
     {
       "name": "[Collaborator 5]",
       "url": "",
-      "logo": ""
+      "logo": "",
+      "hidden": true
     }
   ],
   "themes": [
@@ -281,11 +284,11 @@
   },
   "team": [
     {
-      "name": "Assoc. Prof. Dr. Lau Poh Li",
+      "name": "Associate Professor Dr. Lau Poh Li",
       "group": "Supervisors",
       "color": "Auto",
       "role": "Supervisor",
-      "aff": "[Department]",
+      "aff": "Department of Educational Psychology & Counseling",
       "bio": "[What the supervisor oversees on the program.]",
       "email": "janicepolly@um.edu.my",
       "web": "",
@@ -296,9 +299,9 @@
       "name": "Brendon Ban",
       "group": "Research team",
       "color": "Auto",
-      "role": "PI",
-      "aff": "Master's student, Universiti Malaya",
-      "bio": "",
+      "role": "[Role]",
+      "aff": "[Programme, Department]",
+      "bio": "[Short bio: background, and what you lead on THREAD.]",
       "email": "22059169@siswa.um.edu.my",
       "web": "https://brendonban.io",
       "linkedin": "",

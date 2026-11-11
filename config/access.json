@@ -1,1 +1,10 @@
-{ "people": [] }
+{
+  "people": [
+    {
+      "email": "naomimalikataylors@gmail.com",
+      "role": "editor",
+      "addedBy": "22059169@siswa.um.edu.my",
+      "addedAt": 1794383398067
+    }
+  ]
+}

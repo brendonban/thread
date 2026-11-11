@@ -204,7 +204,7 @@
       "hidden": true
     },
     {
-      "id": "sexual-risk-behaviour",
+      "id": "sexual-risk",
       "name": "Sexual risk behaviour",
       "short": "Sexual practices, testing and the choices people make about prevention.",
       "body": "We study how people think about sexual risk, testing and prevention, and how culture, relationships and stigma shape those choices.\n\n[Add what your team is focusing on in this theme.]",
@@ -255,7 +255,7 @@
     {
       "id": "benang-merah",
       "title": "Benang Merah: A pilot programme under KAMI-IPT (Kesihatan Anak Muda IPT)",
-      "theme": "sexual-risk-behaviour",
+      "theme": "sexual-risk",
       "status": "Planned",
       "start": "2026-12",
       "end": "",
@@ -332,8 +332,10 @@
       "bio": "[Short bio: background, and what you lead on THREAD.]",
       "email": "22059169@siswa.um.edu.my",
       "web": "https://brendonban.io",
-      "linkedin": "",
-      "photo": "img/brendon.png"
+      "linkedin": "https://www.linkedin.com/in/brendonban/",
+      "photo": "img/brendon.png",
+      "orcid": "0000-0001-9555-1566",
+      "researchgate": "https://www.researchgate.net/profile/Brendon-Ren-Jie-Ban?ev=hdr_xprf"
     }
   ],
   "pubs": [
@@ -350,7 +352,7 @@
       "themes": [],
       "projects": [],
       "selected": false,
-      "hidden": true
+      "hidden": false
     }
   ],
   "posts": [

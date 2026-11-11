@@ -281,13 +281,13 @@
   },
   "team": [
     {
-      "name": "[Supervisor name]",
+      "name": "Associate Professor Dr. Lau Poh Li",
       "group": "Supervisors",
       "color": "Auto",
       "role": "Supervisor",
-      "aff": "[Department]",
+      "aff": "Department of Educational Psychology & Counseling",
       "bio": "[What the supervisor oversees on the program.]",
-      "email": "",
+      "email": "janicepolly@um.edu.my",
       "web": "",
       "linkedin": "",
       "photo": ""
@@ -299,7 +299,7 @@
       "role": "[Role]",
       "aff": "[Programme, Department]",
       "bio": "[Short bio: background, and what you lead on THREAD.]",
-      "email": "",
+      "email": "22059169@siswa.um.edu.my",
       "web": "https://brendonban.io",
       "linkedin": "",
       "photo": "img/brendon.png"

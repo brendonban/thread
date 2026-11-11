@@ -10,18 +10,18 @@
     "whyHiv": "[Why this matters in Malaysia: who is affected, what gets in the way of testing and treatment, with sources.]",
     "whyLens": "[Why a cultural frame adds something that clinical models miss.]",
     "involvedIntro": "Want to get involved in THREAD? Great. We are building a small team of research assistants and collaborators across our projects. [**Paid or voluntary?** Say so here.] This page explains what is open right now and what each role involves.",
-    "contact": "[contact email]",
-    "footer": "HIV, culture and care in Malaysia, seen through batik",
-    "researchIntro": "Our projects look at how culture, faith, family and stigma shape HIV testing, disclosure and care in Malaysia.",
-    "partnersTitle": "Our collaborators",
-    "blogIntro": "Short posts on what we are doing, why, and what we are learning along the way.",
     "involvedReflect": "Before you apply, ask yourself what you want from the experience. For some people it is a step toward a Master's or PhD; for others it is a way to find out whether research on HIV and sexual health suits them at all. It helps to come with a clear idea of why this project, and why now.",
     "applyCallout": "If after reading this **entire page** you'd like to be considered, email us with the role in the subject line. Applications are open on a rolling basis.",
     "learnTitle": "Learn more about HIV in Malaysia",
     "learn": "HIV and AIDS fact sheet | https://www.who.int/news-room/fact-sheets/detail/hiv-aids | World Health Organization\nMalaysia country page | https://open.unaids.org/countries/malaysia | UNAIDS\nMalaysia country snapshots | https://www.aidsdatahub.org/country-snapshot/malaysia | HIV and AIDS Data Hub for Asia-Pacific\nMalaysian AIDS Council | https://www.mac.org.my/v3/who-are-we/mac/ | MAC",
-    "alumniTitle": "Alumni",
-    "collabTitle": "Collaborators",
-    "collabNote": "",
+    "contact": "[contact email]",
+    "footer": "HIV, culture and care in Malaysia, seen through batik",
+    "partnersTitle": "Our collaborators",
+    "impactTitle": "Our impact",
+    "impactIntro": "What THREAD has made possible so far: the people we have worked with, the reports we have shared and the moments along the way.",
+    "statsTitle": "In numbers",
+    "reportsTitle": "Impact reports",
+    "galleryTitle": "Moments",
     "whyTitle": "Read it line by line",
     "researchTitle": "Our research",
     "themesTitle": "Research themes",
@@ -34,11 +34,11 @@
     "involvedTitle": "Getting involved",
     "involvedSummaryTitle": "Bottom line: what opportunities currently exist?",
     "involvedSummaryNote": "The summary as of today. Read below for the details.",
-    "impactTitle": "Our impact",
-    "impactIntro": "What THREAD has made possible so far: the people we have worked with, the reports we have shared and the moments along the way.",
-    "statsTitle": "In numbers",
-    "reportsTitle": "Impact reports",
-    "galleryTitle": "Moments"
+    "alumniTitle": "Alumni",
+    "collabTitle": "Collaborators",
+    "collabNote": "",
+    "blogIntro": "Short posts on what we are doing, why, and what we are learning along the way.",
+    "researchIntro": "Our projects look at how culture, faith, family and stigma shape HIV testing, disclosure and care in Malaysia."
   },
   "recruit": {
     "open": true,
@@ -73,6 +73,212 @@
       "text": "The finished cloth goes back to the community. At its centre, a red ribbon."
     }
   ],
+  "alumni": [
+    {
+      "name": "[Name]",
+      "url": "",
+      "desc": "[Role, what they worked on (years)], now [current position]",
+      "hidden": true
+    }
+  ],
+  "collabPeople": [
+    {
+      "name": "[Name]",
+      "url": "",
+      "desc": "[Title, organisation]",
+      "hidden": true
+    }
+  ],
+  "nav": {
+    "why": {
+      "label": "Why batik",
+      "show": true
+    },
+    "research": {
+      "label": "Our research",
+      "show": true
+    },
+    "publications": {
+      "label": "Publications",
+      "show": true
+    },
+    "blog": {
+      "label": "Blog",
+      "show": true
+    },
+    "about": {
+      "label": "About",
+      "show": true
+    },
+    "impact": {
+      "label": "Impact",
+      "show": false
+    },
+    "involved": {
+      "label": "Get involved",
+      "show": true
+    }
+  },
+  "stats": [
+    {
+      "value": "[0]",
+      "label": "[People reached]"
+    },
+    {
+      "value": "[0]",
+      "label": "[Community partners]"
+    },
+    {
+      "value": "[0]",
+      "label": "[Workshops and talks]"
+    }
+  ],
+  "reports": [
+    {
+      "title": "[Impact report title]",
+      "year": "2026",
+      "summary": "[One or two sentences on what the report covers.]",
+      "cover": "",
+      "file": "",
+      "fileName": "",
+      "link": ""
+    }
+  ],
+  "gallery": [],
+  "partners": [
+    {
+      "name": "[Collaborator 1]",
+      "url": "",
+      "logo": ""
+    },
+    {
+      "name": "[Collaborator 2]",
+      "url": "",
+      "logo": ""
+    },
+    {
+      "name": "[Collaborator 3]",
+      "url": "",
+      "logo": ""
+    },
+    {
+      "name": "[Collaborator 4]",
+      "url": "",
+      "logo": ""
+    },
+    {
+      "name": "[Collaborator 5]",
+      "url": "",
+      "logo": ""
+    }
+  ],
+  "themes": [
+    {
+      "id": "plhiv",
+      "name": "People living with HIV",
+      "short": "Everyday life, wellbeing and care for people living with HIV in Malaysia.",
+      "body": "We work alongside people living with HIV (PLHIV) to understand what helps them live well: disclosure, family and faith, stigma in health care and at work, mental health, and staying connected to care.\n\n[Add what your team is focusing on in this theme.]"
+    },
+    {
+      "id": "ageing",
+      "name": "Ageing with HIV",
+      "short": "Growing older with HIV, and the care and support that ageing brings.",
+      "body": "More people with HIV are growing older thanks to effective treatment. We look at what ageing with HIV means in Malaysia: other health conditions, care needs, loneliness and support, and how services can keep up.\n\n[Add what your team is focusing on in this theme.]"
+    },
+    {
+      "id": "chemsex",
+      "name": "Chemsex",
+      "short": "Sexualised drug use: experiences, harms, pleasure and support.",
+      "body": "Chemsex is the use of drugs to enhance or prolong sex. We explore people's experiences of it, the risks for HIV, other infections and mental health, and what kinds of support people find acceptable.\n\n[Add what your team is focusing on in this theme.]",
+      "hidden": true
+    },
+    {
+      "id": "sexual-risk",
+      "name": "Sexual risk behaviour",
+      "short": "Sexual practices, testing and the choices people make about prevention.",
+      "body": "We study how people think about sexual risk, testing and prevention, and how culture, relationships and stigma shape those choices.\n\n[Add what your team is focusing on in this theme.]",
+      "hidden": true
+    },
+    {
+      "id": "prep",
+      "name": "PrEP",
+      "short": "Pre-exposure prophylaxis: awareness, access, uptake and staying on it.",
+      "body": "PrEP is medicine taken before possible exposure to prevent HIV. We look at who knows about it, who can get it, what makes people start or stop, and how stigma affects its use.\n\n[Add what your team is focusing on in this theme.]",
+      "hidden": true
+    },
+    {
+      "id": "doxy-pep",
+      "name": "Doxy-PEP",
+      "short": "Doxycycline after sex to prevent some bacterial STIs: views and use.",
+      "body": "Doxy-PEP is the antibiotic doxycycline taken after sex to lower the chance of some bacterial sexually transmitted infections. We explore how acceptable it is, how people would use it, and concerns about resistance.\n\n[Add what your team is focusing on in this theme.]",
+      "hidden": true
+    },
+    {
+      "id": "pep",
+      "name": "PEP",
+      "short": "Post-exposure prophylaxis: knowing about it and getting it in time.",
+      "body": "PEP is a short course of HIV medicine started soon after a possible exposure, ideally within 72 hours. We look at awareness, the barriers to getting it quickly, and the experiences of people who seek it.\n\n[Add what your team is focusing on in this theme.]",
+      "hidden": true
+    }
+  ],
+  "projects": [
+    {
+      "id": "project-1",
+      "title": "Growing Older, Living Well: Community Participation, Career Adaptability, and Quality of Life Among People Ageing With HIV in Malaysia",
+      "status": "Ethics review",
+      "start": "2026-12",
+      "end": "2027-12",
+      "published": "",
+      "summary": "[One or two sentences for the project card.]",
+      "body": "[Opening paragraph: the problem this project looks at, and why it matters for people living with HIV in Malaysia.]\n\n[Second paragraph: the approach, who takes part, and what the project aims to find out.]",
+      "funding": "",
+      "collaborators": "PT Foundation",
+      "publications": "",
+      "people": [
+        "Brendon Ban"
+      ],
+      "featured": true,
+      "theme": "ageing",
+      "hidden": false
+    }
+  ],
+  "timeline": {
+    "start": 2027,
+    "end": 2030,
+    "note": "[Indicative only. Replace with your real dates in Admin, Timeline.]",
+    "rows": [
+      {
+        "label": "Project 1",
+        "from": "2027-01",
+        "to": "2027-06",
+        "key": false
+      },
+      {
+        "label": "Project 2",
+        "from": "2027-05",
+        "to": "2028-05",
+        "key": false
+      },
+      {
+        "label": "Decision point",
+        "from": "2028-06",
+        "to": "2028-06",
+        "key": true
+      },
+      {
+        "label": "Project 3",
+        "from": "2028-07",
+        "to": "2029-08",
+        "key": false
+      },
+      {
+        "label": "Analysis and publication",
+        "from": "2029-07",
+        "to": "2029-12",
+        "key": true
+      }
+    ]
+  },
   "team": [
     {
       "name": "[Supervisor name]",
@@ -112,7 +318,8 @@
       "tags": "",
       "themes": [],
       "projects": [],
-      "selected": false
+      "selected": false,
+      "hidden": true
     }
   ],
   "posts": [
@@ -180,201 +387,164 @@
       "subject": "THREAD Collaboration–[Your Name / Organisation]"
     }
   ],
-  "projects": [
+  "graph": [
     {
-      "id": "project-1",
-      "title": "[Project 1 title]",
-      "status": "Planned",
-      "start": "2027-01",
-      "end": "2027-06",
-      "published": "2026-11-11",
-      "summary": "[One or two sentences for the project card.]",
-      "body": "[Opening paragraph: the problem this project looks at, and why it matters for people living with HIV in Malaysia.]\n\n[Second paragraph: the approach, who takes part, and what the project aims to find out.]",
-      "funding": "[Funding agency]",
-      "collaborators": "[Collaborators]",
-      "publications": "",
-      "people": [
-        "Brendon Ban"
-      ],
-      "featured": true,
-      "theme": "plhiv"
+      "id": "thread",
+      "label": "THREAD",
+      "group": "Core",
+      "desc": "The central question: how culture, faith, family and stigma shape HIV testing, disclosure and care in Malaysia.",
+      "to": [
+        "batik",
+        "s1",
+        "s2",
+        "s3",
+        "my"
+      ]
     },
     {
-      "id": "project-2",
-      "title": "[Project 2 title]",
-      "status": "Planned",
-      "start": "2027-05",
-      "end": "2028-05",
-      "published": "2026-11-11",
-      "summary": "[One or two sentences for the project card.]",
-      "body": "[Project description.]",
-      "funding": "",
-      "collaborators": "",
-      "publications": "",
-      "people": [
-        "Brendon Ban"
-      ],
-      "featured": true,
-      "theme": "prep"
+      "id": "batik",
+      "label": "Batik lens",
+      "group": "Lens",
+      "desc": "Batik's wax-resist process is our way of reading culture: what protects, what marks, what is revealed.",
+      "to": [
+        "pola",
+        "canting",
+        "celup",
+        "lorod"
+      ]
     },
     {
-      "id": "project-3",
-      "title": "[Project 3 title]",
-      "status": "Planned",
-      "start": "2028-07",
-      "end": "2029-08",
-      "published": "2026-11-11",
-      "summary": "[One or two sentences for the project card.]",
-      "body": "[Project description.]",
-      "funding": "",
-      "collaborators": "",
-      "publications": "",
-      "people": [
-        "Brendon Ban"
-      ],
-      "featured": true,
-      "theme": "ageing"
+      "id": "pola",
+      "label": "Pola",
+      "group": "Lens",
+      "desc": "Pattern: the cultural and religious frame around HIV.",
+      "to": [
+        "family",
+        "faith"
+      ]
+    },
+    {
+      "id": "canting",
+      "label": "Canting",
+      "group": "Lens",
+      "desc": "Wax line: what protects people from stigma.",
+      "to": [
+        "community",
+        "family"
+      ]
+    },
+    {
+      "id": "celup",
+      "label": "Celup",
+      "group": "Lens",
+      "desc": "Dye: where stigma soaks in.",
+      "to": [
+        "stigma"
+      ]
+    },
+    {
+      "id": "lorod",
+      "label": "Lorod",
+      "group": "Lens",
+      "desc": "Boil off: removing barriers to care.",
+      "to": [
+        "testing",
+        "treatment"
+      ]
+    },
+    {
+      "id": "family",
+      "label": "Family",
+      "group": "Culture",
+      "desc": "Family expectations, honour and disclosure.",
+      "to": [
+        "disclosure"
+      ]
+    },
+    {
+      "id": "faith",
+      "label": "Faith",
+      "group": "Culture",
+      "desc": "Religious meaning, community and moral framing.",
+      "to": [
+        "stigma"
+      ]
+    },
+    {
+      "id": "stigma",
+      "label": "Stigma",
+      "group": "Culture",
+      "desc": "Self, social and structural stigma around HIV.",
+      "to": [
+        "disclosure"
+      ]
+    },
+    {
+      "id": "community",
+      "label": "Community",
+      "group": "Culture",
+      "desc": "Peers, NGOs and community organisations.",
+      "to": [
+        "testing"
+      ]
+    },
+    {
+      "id": "testing",
+      "label": "Testing",
+      "group": "Care",
+      "desc": "Deciding to test, and where.",
+      "to": [
+        "treatment"
+      ]
+    },
+    {
+      "id": "disclosure",
+      "label": "Disclosure",
+      "group": "Care",
+      "desc": "Telling partners, family, friends or no one.",
+      "to": []
+    },
+    {
+      "id": "treatment",
+      "label": "Treatment",
+      "group": "Care",
+      "desc": "Starting and staying on care.",
+      "to": []
+    },
+    {
+      "id": "s1",
+      "label": "Study 1",
+      "group": "Studies",
+      "desc": "[Study 1 summary]",
+      "to": [
+        "s2"
+      ]
+    },
+    {
+      "id": "s2",
+      "label": "Study 2",
+      "group": "Studies",
+      "desc": "[Study 2 summary]",
+      "to": [
+        "s3"
+      ]
+    },
+    {
+      "id": "s3",
+      "label": "Study 3",
+      "group": "Studies",
+      "desc": "[Study 3 summary]",
+      "to": []
+    },
+    {
+      "id": "my",
+      "label": "Malaysia",
+      "group": "Context",
+      "desc": "A multicultural, multifaith setting where HIV is shaped by culture as much as medicine.",
+      "to": [
+        "faith",
+        "family"
+      ]
     }
-  ],
-  "themes": [
-    {
-      "id": "plhiv",
-      "name": "People living with HIV",
-      "short": "Everyday life, wellbeing and care for people living with HIV in Malaysia.",
-      "body": "We work alongside people living with HIV (PLHIV) to understand what helps them live well: disclosure, family and faith, stigma in health care and at work, mental health, and staying connected to care.\n\n[Add what your team is focusing on in this theme.]"
-    },
-    {
-      "id": "ageing",
-      "name": "Ageing with HIV",
-      "short": "Growing older with HIV, and the care and support that ageing brings.",
-      "body": "More people with HIV are growing older thanks to effective treatment. We look at what ageing with HIV means in Malaysia: other health conditions, care needs, loneliness and support, and how services can keep up.\n\n[Add what your team is focusing on in this theme.]"
-    },
-    {
-      "id": "chemsex",
-      "name": "Chemsex",
-      "short": "Sexualised drug use: experiences, harms, pleasure and support.",
-      "body": "Chemsex is the use of drugs to enhance or prolong sex. We explore people's experiences of it, the risks for HIV, other infections and mental health, and what kinds of support people find acceptable.\n\n[Add what your team is focusing on in this theme.]"
-    },
-    {
-      "id": "sexual-risk",
-      "name": "Sexual risk behaviour",
-      "short": "Sexual practices, testing and the choices people make about prevention.",
-      "body": "We study how people think about sexual risk, testing and prevention, and how culture, relationships and stigma shape those choices.\n\n[Add what your team is focusing on in this theme.]"
-    },
-    {
-      "id": "prep",
-      "name": "PrEP",
-      "short": "Pre-exposure prophylaxis: awareness, access, uptake and staying on it.",
-      "body": "PrEP is medicine taken before possible exposure to prevent HIV. We look at who knows about it, who can get it, what makes people start or stop, and how stigma affects its use.\n\n[Add what your team is focusing on in this theme.]"
-    },
-    {
-      "id": "doxy-pep",
-      "name": "Doxy-PEP",
-      "short": "Doxycycline after sex to prevent some bacterial STIs: views and use.",
-      "body": "Doxy-PEP is the antibiotic doxycycline taken after sex to lower the chance of some bacterial sexually transmitted infections. We explore how acceptable it is, how people would use it, and concerns about resistance.\n\n[Add what your team is focusing on in this theme.]"
-    },
-    {
-      "id": "pep",
-      "name": "PEP",
-      "short": "Post-exposure prophylaxis: knowing about it and getting it in time.",
-      "body": "PEP is a short course of HIV medicine started soon after a possible exposure, ideally within 72 hours. We look at awareness, the barriers to getting it quickly, and the experiences of people who seek it.\n\n[Add what your team is focusing on in this theme.]"
-    }
-  ],
-  "partners": [
-    {
-      "name": "[Collaborator 1]",
-      "url": "",
-      "logo": ""
-    },
-    {
-      "name": "[Collaborator 2]",
-      "url": "",
-      "logo": ""
-    },
-    {
-      "name": "[Collaborator 3]",
-      "url": "",
-      "logo": ""
-    },
-    {
-      "name": "[Collaborator 4]",
-      "url": "",
-      "logo": ""
-    },
-    {
-      "name": "[Collaborator 5]",
-      "url": "",
-      "logo": ""
-    }
-  ],
-  "alumni": [
-    {
-      "name": "[Name]",
-      "url": "",
-      "desc": "[Role, what they worked on (years)], now [current position]"
-    }
-  ],
-  "collabPeople": [
-    {
-      "name": "[Name]",
-      "url": "",
-      "desc": "[Title, organisation]"
-    }
-  ],
-  "nav": {
-    "why": {
-      "label": "Why batik",
-      "show": true
-    },
-    "research": {
-      "label": "Our research",
-      "show": true
-    },
-    "publications": {
-      "label": "Publications",
-      "show": true
-    },
-    "blog": {
-      "label": "Blog",
-      "show": true
-    },
-    "about": {
-      "label": "About",
-      "show": true
-    },
-    "involved": {
-      "label": "Get involved",
-      "show": true
-    },
-    "impact": {
-      "label": "Impact",
-      "show": true
-    }
-  },
-  "stats": [
-    {
-      "value": "[0]",
-      "label": "[People reached]"
-    },
-    {
-      "value": "[0]",
-      "label": "[Community partners]"
-    },
-    {
-      "value": "[0]",
-      "label": "[Workshops and talks]"
-    }
-  ],
-  "reports": [
-    {
-      "title": "[Impact report title]",
-      "year": "2026",
-      "summary": "[One or two sentences on what the report covers.]",
-      "cover": "",
-      "file": "",
-      "fileName": "",
-      "link": ""
-    }
-  ],
-  "gallery": []
+  ]
 }

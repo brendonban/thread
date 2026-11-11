@@ -104,7 +104,7 @@
     },
     "blog": {
       "label": "Blog",
-      "show": true
+      "show": false
     },
     "about": {
       "label": "About",

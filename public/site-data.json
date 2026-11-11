@@ -189,6 +189,12 @@
       "body": "More people with HIV are growing older thanks to effective treatment. We look at what ageing with HIV means in Malaysia: other health conditions, care needs, loneliness and support, and how services can keep up.\n\n[Add what your team is focusing on in this theme.]"
     },
     {
+      "id": "stigma-and-discrimination",
+      "name": "Stigma & Discrimination",
+      "short": "Understanding stigma and discrimination in Malaysia, and finding ways to reduce it in health care and the community.",
+      "body": ""
+    },
+    {
       "id": "chemsex",
       "name": "Chemsex",
       "short": "Sexualised drug use: experiences, harms, pleasure and support.",
@@ -222,12 +228,6 @@
       "short": "Post-exposure prophylaxis: knowing about it and getting it in time.",
       "body": "PEP is a short course of HIV medicine started soon after a possible exposure, ideally within 72 hours. We look at awareness, the barriers to getting it quickly, and the experiences of people who seek it.\n\n[Add what your team is focusing on in this theme.]",
       "hidden": true
-    },
-    {
-      "id": "stigma-and-discrimination",
-      "name": "Stigma & Discrimination",
-      "short": "Understanding stigma and discrimination in Malaysia, and finding ways to reduce it in health care and the community.",
-      "body": ""
     }
   ],
   "projects": [

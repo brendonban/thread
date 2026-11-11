@@ -100,7 +100,7 @@
     },
     "publications": {
       "label": "Publications",
-      "show": true
+      "show": false
     },
     "blog": {
       "label": "Blog",
@@ -116,7 +116,7 @@
     },
     "involved": {
       "label": "Get involved",
-      "show": true
+      "show": false
     }
   },
   "stats": [

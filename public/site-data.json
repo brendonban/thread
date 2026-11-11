@@ -249,6 +249,25 @@
       "featured": true,
       "theme": "ageing",
       "hidden": false
+    },
+    {
+      "id": "project-csu14",
+      "title": "Benang Merah: A pilot programme under KAMI-IPT (Kesihatan Anak Muda IPT)",
+      "theme": "sexual-risk",
+      "status": "Planned",
+      "start": "2026-12",
+      "end": "",
+      "published": "",
+      "summary": "",
+      "body": "",
+      "funding": "Malaysian AIDs Council",
+      "collaborators": "Malaysian AIDs Council, PT Foundation",
+      "publications": "",
+      "people": [
+        "Assoc. Prof. Dr. Lau Poh Li",
+        "Brendon Ban"
+      ],
+      "featured": true
     }
   ],
   "timeline": {

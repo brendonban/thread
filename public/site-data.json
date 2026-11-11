@@ -180,7 +180,8 @@
       "id": "plhiv",
       "name": "People living with HIV",
       "short": "Everyday life, wellbeing and care for people living with HIV in Malaysia.",
-      "body": "We work alongside people living with HIV (PLHIV) to understand what helps them live well: disclosure, family and faith, stigma in health care and at work, mental health, and staying connected to care.\n\n[Add what your team is focusing on in this theme.]"
+      "body": "We work alongside people living with HIV (PLHIV) to understand what helps them live well: disclosure, family and faith, stigma in health care and at work, mental health, and staying connected to care.\n\n[Add what your team is focusing on in this theme.]",
+      "hidden": true
     },
     {
       "id": "ageing",
@@ -192,7 +193,8 @@
       "id": "stigma-and-discrimination",
       "name": "Stigma & Discrimination",
       "short": "Understanding stigma and discrimination in Malaysia, and finding ways to reduce it in health care and the community.",
-      "body": ""
+      "body": "",
+      "hidden": true
     },
     {
       "id": "chemsex",

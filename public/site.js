@@ -1,0 +1,1194 @@
+/* Host bridge: gives the page the same window.claude interface it uses on
+   claude.ai, backed by this Next.js app (Google sign-in + GitHub commits). */
+(function(){
+  if (window.claude) return;
+  const host = { signInUrl: "/api/auth/signin/google?callbackUrl=%2F%23admin", signOutUrl: "/api/auth/signout?callbackUrl=%2F", email: "" };
+  let mePromise = null;
+  const me = () => mePromise || (mePromise = fetch("/api/me", { cache: "no-store" }).then(r => r.ok ? r.json() : {}).catch(() => ({})).then(m => { host.email = m.email || ""; return m; }));
+  const err = (code, message) => Object.assign(new Error(message || code), { code });
+  async function post(url, body, isForm) {
+    const r = await fetch(url, isForm ? { method: "POST", body } : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 401 || r.status === 403) throw err("not_writer", j.error);
+    if (r.status === 409) throw err("conflict", j.error);
+    if (r.status === 413) throw err("too_large", j.error);
+    if (r.status === 415) throw err("unsupported_type", j.error);
+    if (!r.ok) throw err("upstream_error", j.error);
+    return j;
+  }
+  window.claude = {
+    host,
+    use: async (name) => {
+      if (name === "user") {
+        const m = await me();
+        return { canEdit: async () => !!m.isAdmin, isOwner: async () => !!m.isAdmin, id: async () => m.email || null, profiles: async (ids) => Object.fromEntries((ids || []).map(i => [i, { name: i }])) };
+      }
+      if (name === "artifact") {
+        const m = await me();
+        if (!m.isAdmin) return null;
+        return { publish: async (files) => post("/api/content", { content: files["site-data.json"] }) };
+      }
+      if (name === "access") {
+        const m = await me();
+        if (!m.canManageAccess) return null;
+        const get = async () => { const r = await fetch("/api/access", { cache: "no-store" }); if (!r.ok) throw err(r.status === 401 ? "not_writer" : "upstream_error"); return r.json(); };
+        return {
+          list: get,
+          set: (email, role) => post("/api/access", { action: "set", email, role }),
+          remove: (email) => post("/api/access", { action: "remove", email })
+        };
+      }
+      if (name === "assets") {
+        const m = await me();
+        if (!m.isAdmin) return null;
+        return {
+          upload: async (file) => { const fd = new FormData(); fd.append("file", file); return post("/api/upload", fd, true); },
+          delete: async () => {}
+        };
+      }
+      if (name === "db") {
+        const m = await me();
+        if (!m.isAdmin) return null;
+        const probe = await fetch("/api/resources", { cache: "no-store" }).catch(() => null);
+        if (!probe || probe.status === 503) return null;
+        return resourcesDb();
+      }
+      return null;
+    }
+  };
+
+  /* Research resources: a small stand-in for the db the page uses on claude.ai,
+     backed by /api/resources (a private GitHub repository). */
+  function resourcesDb() {
+    const listeners = new Set();
+    let timer = null;
+    async function refresh() {
+      const r = await fetch("/api/resources", { cache: "no-store" });
+      if (!r.ok) throw err(r.status === 401 ? "permission_denied" : "unavailable");
+      const j = await r.json();
+      const docs = (j.items || []).map(it => ({ id: it.id, exists: true, data: () => it }));
+      listeners.forEach(l => l.next({ docs, size: docs.length, empty: !docs.length }));
+    }
+    const call = async (body) => { await post("/api/resources", body); refresh().catch(() => {}); };
+    return {
+      collection: () => ({
+        orderBy: () => ({
+          onSnapshot: (next, error) => {
+            const l = { next, error }; listeners.add(l);
+            refresh().catch(e => error && error(e));
+            if (!timer) timer = setInterval(() => { if (!document.hidden) refresh().catch(() => {}); }, 60000);
+            return () => listeners.delete(l);
+          }
+        }),
+        add: async (data) => { await call({ action: "add", data }); return {}; }
+      }),
+      doc: (path) => {
+        const id = String(path).split("/")[1];
+        return { update: (data) => call({ action: "update", id, data }), delete: () => call({ action: "delete", id }) };
+      },
+      upload: async (file) => { const fd = new FormData(); fd.append("file", file); return post("/api/resources/upload", fd, true); },
+      deleteFile: async (p) => { await fetch("/api/resources/file?path=" + encodeURIComponent(p), { method: "DELETE" }).catch(() => {}); }
+    };
+  }
+})();
+
+
+/* =============== Default content (shown until something is published) =============== */
+const DEFAULT = {
+  site:{
+    title:"THREAD",
+    acronym:"[What THREAD stands for]",
+    institution:"[Institution]",
+    department:"[Department]",
+    question:"How do culture, faith, family and stigma shape the way people in Malaysia test for, talk about and live with HIV?",
+    lensLine:"We look through a Malaysian lens: batik.",
+    lens:"Batik is made line by line. Wax drawn with a canting protects parts of the cloth from the dye and lets others take colour. We use that process to see what protects people, what marks them, and what is revealed once the wax comes off.",
+    whyHiv:"[Why this matters in Malaysia: who is affected, what gets in the way of testing and treatment, with sources.]",
+    whyLens:"[Why a cultural frame adds something that clinical models miss.]",
+    involvedIntro:"Want to get involved in THREAD? Great. We are building a small team of research assistants and collaborators across our projects. [**Paid or voluntary?** Say so here.] This page explains what is open right now and what each role involves.",
+    involvedReflect:"Before you apply, ask yourself what you want from the experience. For some people it is a step toward a Master's or PhD; for others it is a way to find out whether research on HIV and sexual health suits them at all. It helps to come with a clear idea of why this project, and why now.",
+    applyCallout:"If after reading this **entire page** you'd like to be considered, email us with the role in the subject line. Applications are open on a rolling basis.",
+    learnTitle:"Learn more about HIV in Malaysia",
+    learn:"HIV and AIDS fact sheet | https://www.who.int/news-room/fact-sheets/detail/hiv-aids | World Health Organization\nMalaysia country page | https://open.unaids.org/countries/malaysia | UNAIDS\nMalaysia country snapshots | https://www.aidsdatahub.org/country-snapshot/malaysia | HIV and AIDS Data Hub for Asia-Pacific\nMalaysian AIDS Council | https://www.mac.org.my/v3/who-are-we/mac/ | MAC",
+    contact:"[contact email]",
+    footer:"HIV, culture and care in Malaysia, seen through batik",
+    partnersTitle:"Our collaborators",
+    impactTitle:"Our impact",impactIntro:"What THREAD has made possible so far: the people we have worked with, the reports we have shared and the moments along the way.",
+    statsTitle:"In numbers",reportsTitle:"Impact reports",galleryTitle:"Moments",
+    whyTitle:"Read it line by line",researchTitle:"Our research",themesTitle:"Research themes",browseTitle:"Browse or search our projects by research theme or project name.",
+    pubsTitle:"Publications",pubsIntro:"Papers, protocols and talks from the program, including work in preparation and planned outputs.",
+    blogTitle:"Blog",aboutTitle:"Research team",aboutIntro:"The people behind THREAD, a research program at [Institution].",
+    involvedTitle:"Getting involved",involvedSummaryTitle:"Bottom line: what opportunities currently exist?",involvedSummaryNote:"The summary as of today. Read below for the details.",
+    alumniTitle:"Alumni",
+    collabTitle:"Collaborators",
+    collabNote:"",
+    blogIntro:"Short posts on what we are doing, why, and what we are learning along the way.",
+    researchIntro:"Our projects look at how culture, faith, family and stigma shape HIV testing, disclosure and care in Malaysia."
+  },
+  recruit:{open:true,deadline:"Rolling, no deadline",pill:"Join as RA or collaborator",closed:"We are not taking applications right now. Thank you for your interest."},
+  stages:[
+    {mal:"Pola",en:"Pattern",text:"Every cloth begins as a pattern. Culture, faith and family draw the lines people live within. We start by mapping them."},
+    {mal:"Canting",en:"Wax",text:"Wax protects whatever it touches. We look for what shields people from HIV stigma: care, trust and community."},
+    {mal:"Celup",en:"Dye",text:"Dye soaks into whatever is left open. Stigma settles the same way, quietly. We study where it lands."},
+    {mal:"Lorod",en:"Boil",text:"Boiling lifts the wax away. We test what removes the barriers to testing, treatment and disclosure."},
+    {mal:"Kain",en:"Cloth",text:"The finished cloth goes back to the community. At its centre, a red ribbon."}
+  ],
+  alumni:[
+    {name:"[Name]",url:"",desc:"[Role, what they worked on (years)], now [current position]"}
+  ],
+  collabPeople:[
+    {name:"[Name]",url:"",desc:"[Title, organisation]"}
+  ],
+  nav:{
+    why:{label:"Why batik",show:true},research:{label:"Our research",show:true},publications:{label:"Publications",show:true},
+    blog:{label:"Blog",show:true},about:{label:"About",show:true},impact:{label:"Impact",show:true},involved:{label:"Get involved",show:true}
+  },
+  stats:[
+    {value:"[0]",label:"[People reached]"},{value:"[0]",label:"[Community partners]"},{value:"[0]",label:"[Workshops and talks]"}
+  ],
+  reports:[
+    {title:"[Impact report title]",year:"2026",summary:"[One or two sentences on what the report covers.]",cover:"",file:"",fileName:"",link:""}
+  ],
+  gallery:[],
+  partners:[
+    {name:"[Collaborator 1]",url:"",logo:""},{name:"[Collaborator 2]",url:"",logo:""},{name:"[Collaborator 3]",url:"",logo:""},
+    {name:"[Collaborator 4]",url:"",logo:""},{name:"[Collaborator 5]",url:"",logo:""}
+  ],
+  themes:[
+    {id:"plhiv",name:"People living with HIV",short:"Everyday life, wellbeing and care for people living with HIV in Malaysia.",body:"We work alongside people living with HIV (PLHIV) to understand what helps them live well: disclosure, family and faith, stigma in health care and at work, mental health, and staying connected to care.\n\n[Add what your team is focusing on in this theme.]"},
+    {id:"ageing",name:"Ageing with HIV",short:"Growing older with HIV, and the care and support that ageing brings.",body:"More people with HIV are growing older thanks to effective treatment. We look at what ageing with HIV means in Malaysia: other health conditions, care needs, loneliness and support, and how services can keep up.\n\n[Add what your team is focusing on in this theme.]"},
+    {id:"chemsex",name:"Chemsex",short:"Sexualised drug use: experiences, harms, pleasure and support.",body:"Chemsex is the use of drugs to enhance or prolong sex. We explore people's experiences of it, the risks for HIV, other infections and mental health, and what kinds of support people find acceptable.\n\n[Add what your team is focusing on in this theme.]"},
+    {id:"sexual-risk",name:"Sexual risk behaviour",short:"Sexual practices, testing and the choices people make about prevention.",body:"We study how people think about sexual risk, testing and prevention, and how culture, relationships and stigma shape those choices.\n\n[Add what your team is focusing on in this theme.]"},
+    {id:"prep",name:"PrEP",short:"Pre-exposure prophylaxis: awareness, access, uptake and staying on it.",body:"PrEP is medicine taken before possible exposure to prevent HIV. We look at who knows about it, who can get it, what makes people start or stop, and how stigma affects its use.\n\n[Add what your team is focusing on in this theme.]"},
+    {id:"doxy-pep",name:"Doxy-PEP",short:"Doxycycline after sex to prevent some bacterial STIs: views and use.",body:"Doxy-PEP is the antibiotic doxycycline taken after sex to lower the chance of some bacterial sexually transmitted infections. We explore how acceptable it is, how people would use it, and concerns about resistance.\n\n[Add what your team is focusing on in this theme.]"},
+    {id:"pep",name:"PEP",short:"Post-exposure prophylaxis: knowing about it and getting it in time.",body:"PEP is a short course of HIV medicine started soon after a possible exposure, ideally within 72 hours. We look at awareness, the barriers to getting it quickly, and the experiences of people who seek it.\n\n[Add what your team is focusing on in this theme.]"}
+  ],
+  projects:[
+    {id:"project-1",title:"[Project 1 title]",theme:"plhiv",status:"Planned",start:"2027-01",end:"2027-06",published:"2026-11-11",
+     summary:"[One or two sentences for the project card.]",
+     body:"[Opening paragraph: the problem this project looks at, and why it matters for people living with HIV in Malaysia.]\n\n[Second paragraph: the approach, who takes part, and what the project aims to find out.]",
+     funding:"[Funding agency]",collaborators:"[Collaborators]",publications:"",people:["Brendon Ban"],featured:true},
+    {id:"project-2",title:"[Project 2 title]",theme:"prep",status:"Planned",start:"2027-05",end:"2028-05",published:"2026-11-11",
+     summary:"[One or two sentences for the project card.]",body:"[Project description.]",funding:"",collaborators:"",publications:"",people:["Brendon Ban"],featured:true},
+    {id:"project-3",title:"[Project 3 title]",theme:"ageing",status:"Planned",start:"2028-07",end:"2029-08",published:"2026-11-11",
+     summary:"[One or two sentences for the project card.]",body:"[Project description.]",funding:"",collaborators:"",publications:"",people:["Brendon Ban"],featured:true}
+  ],
+  timeline:{start:2027,end:2030,note:"[Indicative only. Replace with your real dates in Admin, Timeline.]",rows:[
+    {label:"Project 1",from:"2027-01",to:"2027-06",key:false},
+    {label:"Project 2",from:"2027-05",to:"2028-05",key:false},
+    {label:"Decision point",from:"2028-06",to:"2028-06",key:true},
+    {label:"Project 3",from:"2028-07",to:"2029-08",key:false},
+    {label:"Analysis and publication",from:"2029-07",to:"2029-12",key:true}
+  ]},
+  team:[
+    {name:"[Supervisor name]",group:"Supervisors",color:"Auto",role:"Supervisor",aff:"[Department]",bio:"[What the supervisor oversees on the program.]",email:"",web:"",linkedin:"",photo:""},
+    {name:"Brendon Ban",group:"Research team",color:"Auto",role:"[Role]",aff:"[Programme, Department]",bio:"[Short bio: background, and what you lead on THREAD.]",email:"",web:"https://brendonban.io",linkedin:"",photo:"img/brendon.png"}
+  ],
+  pubs:[],
+  posts:[
+    {id:"why-batik",title:"Why batik?",date:"2026-11-11",author:"Brendon Ban",dek:"Why a Malaysian textile is the lens for a study about HIV.",tags:"batik, culture, program",
+     body:"[Draft post. Replace with your own words.]\n\nBatik is made slowly. A line of hot wax drawn with a canting decides which parts of the cloth take the dye and which stay clear. Nothing is revealed until the wax is boiled away.\n\nHIV in Malaysia is shaped the same way, by what families, faith, communities and services protect and by what they mark. THREAD follows those lines one at a time.\n\n## Five steps, five questions\n\n- **Pola:** what patterns of culture and faith frame HIV?\n- **Canting:** what protects people from stigma?\n- **Celup:** where does stigma soak in?\n- **Lorod:** what removes the barriers to care?\n- **Kain:** what do we give back to the community?\n\n> Nothing is revealed until the wax comes off."}
+  ],
+  opps:[{"title": "Research Assistant", "eyebrow": "All studies · Research assistant", "open": true, "wide": false, "detail": true, "summary": "We are **open** to research assistants across our projects. [Hours and dates.] **Rolling applications, no deadline.**", "lede": "Work alongside the research team on studies about HIV, culture and care in Malaysia. Hands-on research experience for students and recent graduates.", "org": "[Institution]", "dept": "[Department]", "location": "[Remote, or on-site at …]", "timeline": "Rolling, no deadline", "commitment": "[Hours a week]", "pay": "[Paid or voluntary]", "l1t": "What you'll do", "l1": "Search for and screen research articles\nHelp prepare study materials and surveys\nSupport data collection, transcription and coding of interviews\nHelp with community engagement and outreach\nAttend a weekly team meeting", "l2t": "What you'll gain", "l2": "Training in qualitative and quantitative research methods\nExperience in HIV and sexual health research\nYour contribution named in publications, with co-authorship if you meet authorship criteria\nA letter confirming your role and hours on completion", "l3t": "Required", "l3": "Enrolled in or recently graduated from psychology, counselling, public health, social science or a related field\nComfortable reading academic papers in English\nRespectful and non-judgemental when talking about HIV, sex and drug use\nCareful with confidential information\nAble to work independently and meet weekly targets", "l4t": "Preferred", "l4": "Prior research experience\nFamiliarity with NVivo, SPSS, R or Excel\nExperience with LGBTQ+ communities or people living with HIV\nSpeaks Bahasa Malaysia, Mandarin or Tamil", "applyTitle": "How to apply", "apply": "Attach your **resume or CV** and your **most recent academic transcript**. In the email body, tell us briefly why you are interested, what relevant experience or skills you have, and what you hope to gain.", "subject": "THREAD Research Assistant Application–[Your Name]"}, {"title": "Collaborators", "eyebrow": "Partnerships · Collaboration", "open": true, "wide": false, "detail": true, "summary": "We are **open to collaboration** with researchers, clinicians, community organisations and artists working on HIV, culture or batik in Malaysia. Get in touch any time.", "lede": "THREAD is built with others. If your work touches HIV, sexual health, culture or community in Malaysia, we would like to hear from you.", "org": "", "dept": "", "location": "", "timeline": "", "commitment": "", "pay": "", "l1t": "Who we work with", "l1": "Researchers and academics\nClinicians, counsellors and health services\nCommunity organisations and peer networks\nArtists and batik makers", "l2t": "Ways to collaborate", "l2": "Co-designing or co-leading a project\nHelping us reach and recruit communities\nSharing expertise, data or training\nCo-authoring papers and reports", "l3t": "", "l3": "", "l4t": "", "l4": "", "applyTitle": "How to get in touch", "apply": "Email us a few lines about you or your organisation and the kind of collaboration you have in mind.", "subject": "THREAD Collaboration–[Your Name / Organisation]"}],
+  graph:[
+    {id:"thread",label:"THREAD",group:"Core",desc:"The central question: how culture, faith, family and stigma shape HIV testing, disclosure and care in Malaysia.",to:["batik","s1","s2","s3","my"]},
+    {id:"batik",label:"Batik lens",group:"Lens",desc:"Batik's wax-resist process is our way of reading culture: what protects, what marks, what is revealed.",to:["pola","canting","celup","lorod"]},
+    {id:"pola",label:"Pola",group:"Lens",desc:"Pattern: the cultural and religious frame around HIV.",to:["family","faith"]},
+    {id:"canting",label:"Canting",group:"Lens",desc:"Wax line: what protects people from stigma.",to:["community","family"]},
+    {id:"celup",label:"Celup",group:"Lens",desc:"Dye: where stigma soaks in.",to:["stigma"]},
+    {id:"lorod",label:"Lorod",group:"Lens",desc:"Boil off: removing barriers to care.",to:["testing","treatment"]},
+    {id:"family",label:"Family",group:"Culture",desc:"Family expectations, honour and disclosure.",to:["disclosure"]},
+    {id:"faith",label:"Faith",group:"Culture",desc:"Religious meaning, community and moral framing.",to:["stigma"]},
+    {id:"stigma",label:"Stigma",group:"Culture",desc:"Self, social and structural stigma around HIV.",to:["disclosure"]},
+    {id:"community",label:"Community",group:"Culture",desc:"Peers, NGOs and community organisations.",to:["testing"]},
+    {id:"testing",label:"Testing",group:"Care",desc:"Deciding to test, and where.",to:["treatment"]},
+    {id:"disclosure",label:"Disclosure",group:"Care",desc:"Telling partners, family, friends or no one.",to:[]},
+    {id:"treatment",label:"Treatment",group:"Care",desc:"Starting and staying on care.",to:[]},
+    {id:"s1",label:"Study 1",group:"Studies",desc:"[Study 1 summary]",to:["s2"]},
+    {id:"s2",label:"Study 2",group:"Studies",desc:"[Study 2 summary]",to:["s3"]},
+    {id:"s3",label:"Study 3",group:"Studies",desc:"[Study 3 summary]",to:[]},
+    {id:"my",label:"Malaysia",group:"Context",desc:"A multicultural, multifaith setting where HIV is shaped by culture as much as medicine.",to:["faith","family"]}
+  ]
+};
+
+/* =============== State & storage =============== */
+let live = structuredClone(DEFAULT);   // what visitors see
+let C = live;                           // what is rendered (draft while editing)
+let db=null, user=null, artifact=null, assets=null, host=null, isEditor=false, inAdmin=false, draftDirty=false, readOnly=false;
+const LKEY="thread-draft-v3";
+const lsGet=k=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return null}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const lsDel=k=>{try{localStorage.removeItem(k)}catch(e){}};
+function migrate(d){
+  if(d&&!d.projects&&Array.isArray(d.studies)&&!d.studies.every(x=>/^\[/.test(x.name||""))){
+    d.projects=d.studies.map((x,i)=>({id:"project-"+(i+1),title:x.name||"",area:"",status:x.status||"Planned",start:"",end:"",published:new Date().toISOString().slice(0,10),
+      summary:x.q||"",body:x.q||"",funding:"",collaborators:"",publications:"",people:[],featured:true,when:x.when||""}));
+  }
+  if(d)delete d.studies;return d;
+}
+function merge(base,obj){ // keep new default keys if older content lacks them
+  if(!obj||typeof obj!=="object"||Array.isArray(obj))return obj??base;
+  const out={...base};for(const k in obj)out[k]=(base&&typeof base[k]==="object"&&!Array.isArray(base[k]))?merge(base[k],obj[k]):obj[k];return out;
+}
+
+/* =============== Helpers =============== */
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const t=s=>esc(s).replace(/\[([^\]]+)\]/g,'<span class="ph">$1</span>');
+const ed=(path,val)=>`<span data-k="${path}">${t(val)}</span>`;
+const fmtDate=d=>{const x=new Date(d+"T00:00");return isNaN(x)?esc(d):x.toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})};
+const tagList=s=>Array.isArray(s)?s:String(s||"").split(",").map(x=>x.trim().replace(/^#/,"")).filter(Boolean);
+const initials=n=>String(n||"").replace(/[\[\]]/g,"").split(/\s+/).filter(Boolean).map(w=>w[0]).slice(0,3).join("").toUpperCase();
+function toast(m){const e=document.getElementById("toast");e.textContent=m;e.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>e.classList.remove("show"),2000)}
+function toggleDark(){document.documentElement.classList.toggle("dark");lsSet("thread-dark",document.documentElement.classList.contains("dark"));render()}
+if(lsGet("thread-dark"))document.documentElement.classList.add("dark");
+const getP=(o,p)=>p.reduce((a,k)=>a?.[k],o);
+function setP(o,p,v){let x=o;for(let i=0;i<p.length-1;i++)x=x[p[i]];x[p.at(-1)]=v}
+
+const FLOWER=(size=24,center=true)=>`<svg viewBox="-12 -12 24 24" width="${size}" height="${size}" aria-hidden="true">${[0,72,144,216,288].map(a=>`<ellipse cx="0" cy="-6" rx="3.6" ry="5.6" fill="var(--red)" transform="rotate(${a})"/>`).join("")}${center?`<circle r="2.6" fill="var(--maroon)"/><circle r="1" fill="var(--gold)"/>`:""}</svg>`;
+let stainN=0;
+const STAIN=(style,size,op=.08,seed=3)=>{const id="st"+(++stainN);return `<svg class="stain" style="${style};width:${size}px;height:${size}px" viewBox="0 0 200 200" aria-hidden="true">
+  <defs><filter id="${id}f" x="-30%" y="-30%" width="160%" height="160%"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="3" seed="${seed}"/><feDisplacementMap in="SourceGraphic" scale="38" xChannelSelector="R" yChannelSelector="G"/><feGaussianBlur stdDeviation="1.2"/></filter>
+  <radialGradient id="${id}g"><stop offset="0" stop-color="var(--red)" stop-opacity="${op*.55}"/><stop offset=".72" stop-color="var(--red)" stop-opacity="${op}"/><stop offset=".86" stop-color="var(--red)" stop-opacity="${op*1.5}"/><stop offset="1" stop-color="var(--red)" stop-opacity="0"/></radialGradient></defs>
+  <g filter="url(#${id}f)"><circle cx="100" cy="100" r="70" fill="url(#${id}g)"/><circle cx="150" cy="140" r="16" fill="var(--red)" fill-opacity="${op*.9}"/><circle cx="58" cy="42" r="7" fill="var(--red)" fill-opacity="${op*.9}"/></g></svg>`};
+
+/* =============== Public views =============== */
+const V={};
+V.home=()=>`
+<section class="view hero" style="position:relative"><div class="wrap" style="position:relative">
+  ${STAIN("right:-180px;top:-140px",560,.07,3)}${STAIN("left:-160px;top:420px",300,.05,8)}
+  <div class="hero-grid">
+    <div>
+      <h1>${esc(C.site.title).replace(/^(.)/,'<span>$1</span>')}</h1>
+      <svg class="thread-line" viewBox="0 0 560 22" preserveAspectRatio="none"><path d="M2 11 C40 2 70 20 110 11 S180 2 220 11 S290 20 330 11 S400 2 440 11 S510 20 558 11"/></svg>
+      <p class="sub">${ed("site.acronym",C.site.acronym)} · A research program at <b>${ed("site.institution",C.site.institution)}</b>, ${ed("site.department",C.site.department)}.</p>
+      <p class="lede" style="font-size:21px;color:var(--ink)">${ed("site.question",C.site.question)} ${ed("site.lensLine",C.site.lensLine).replace(/batik/i,'<em class="ms">batik</em>')}</p>
+      <div class="cta"><a class="btn" href="#why">Why batik</a><a class="btn ghost" href="#research">Our research</a></div>
+    </div>
+    <div class="cloth-card">
+      ${batikSVG()}
+      <div class="stepper" role="group" aria-label="Batik stages">${C.stages.slice(0,5).map((st,i)=>`<button onclick="bkSet(${i},true)" aria-pressed="false">${esc(st.mal)}</button>`).join("")}</div>
+      <div class="bk-cap" id="bkcap" aria-live="polite"></div>
+      <div class="bk-nav"><button class="linkbtn" id="bkprev" onclick="bkSet(BK.s-1,true)">← Back</button><button class="linkbtn" id="bknext" onclick="bkNext()">Next</button></div>
+    </div>
+  </div>
+  ${SH(C.partners).length?`<div class="teaser partners"><p class="eyebrow" style="text-align:center" data-k="site.partnersTitle">${esc(C.site.partnersTitle)}</p>
+    <div class="marquee"><div class="track">${(()=>{let a=[];while(a.length<8)a=a.concat(SH(C.partners));return a.concat(a)})().map((p,i)=>{const inner=p.logo?`<img src="${esc(p.logo)}" alt="${esc(p.name.replace(/[\[\]]/g,""))}">`:`<span class="pname">${t(p.name)}</span>`;return safeUrl(p.url)?`<a class="partner" href="${esc(p.url)}" target="_blank" rel="noopener" ${i>=SH(C.partners).length?'tabindex="-1" aria-hidden="true"':""}>${inner}</a>`:`<span class="partner" ${i>=SH(C.partners).length?'aria-hidden="true"':""}>${inner}</span>`}).join("")}</div></div></div>`:""}
+</div></section>`;
+
+V.why=()=>`
+<section class="view" style="position:relative"><div class="wrap" style="position:relative">
+  ${STAIN("right:-120px;top:-60px",380,.06,5)}
+  <p class="eyebrow">${esc(C.nav.why.label)}</p>
+  <h1 class="page">${ed("site.whyTitle",C.site.whyTitle)}</h1>
+  <p class="lede">${ed("site.lens",C.site.lens)}</p>
+  <div class="stages">${C.stages.map((s,i)=>`<div class="stage"><em class="ms" data-k="stages.${i}.mal">${esc(s.mal)}</em><div class="en">${ed(`stages.${i}.en`,s.en)}</div><p>${ed(`stages.${i}.text`,s.text)}</p></div>`).join("")}</div>
+  <div class="grid2" style="margin-top:64px">
+    <div class="card"><div class="num">WHY HIV</div><h3>Culture shapes care</h3><p>${ed("site.whyHiv",C.site.whyHiv)}</p></div>
+    <div class="card"><div class="num">WHY A CULTURAL LENS</div><h3>Medicine alone is not the whole cloth</h3><p>${ed("site.whyLens",C.site.whyLens)}</p></div>
+  </div>
+</div></section>`;
+
+const statusClass=s=>/underway|open|recruit|active/i.test(s)?"go":/ethic|review|prep/i.test(s)?"wait":/complete|done|publish/i.test(s)?"done":"";
+const mVal=m=>{const [y,mo]=String(m||"").split("-").map(Number);return y?(y+((mo||1)-1)/12):NaN};
+const fmtMonth=m=>{const [y,mo]=String(m||"").split("-").map(Number);return y?new Date(y,(mo||1)-1,1).toLocaleDateString("en-GB",{month:"short",year:"numeric"}):""};
+const projDates=p=>p.start||p.end?[fmtMonth(p.start),fmtMonth(p.end)].filter(Boolean).join(" to "):(p.when||"");
+const SH=a=>(a||[]).filter(x=>x&&!x.hidden);
+const themeOf=p=>C.themes.find(x=>x.id===p.theme);
+const themeName=p=>themeOf(p)?.name||p.area||"";
+const pubLink=p=>safeUrl(p.link)?p.link:(p.doi?"https://doi.org/"+String(p.doi).replace(/^https?:\/\/(dx\.)?doi\.org\//,""):"");
+const pubItem=p=>{const u=pubLink(p);return `<div class="pubitem"><div class="mono" style="letter-spacing:.1em">${esc((p.type||"").toUpperCase())}${p.year?" · "+esc(p.year):""}</div>
+  <div class="pt">${u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(p.title)}</a>`:esc(p.title)}</div><div class="pm">${esc([p.authors,p.venue].filter(Boolean).join(" · "))}</div></div>`};
+const projCard=p=>`<a class="pcard" href="#${esc(p.id)}"><div class="pc-k">THREAD${themeName(p)?" · "+esc(themeName(p)):""}</div><h3>${t(p.title)}</h3><p>${t(p.summary)}</p>
+  <div class="pc-f"><span class="mono">View project</span> <span class="arr">→</span>${p.status?`<span class="badge ${statusClass(p.status)}" style="margin-left:auto">${esc(p.status)}</span>`:""}</div></a>`;
+let rq={theme:"",q:"",sort:"newest"};
+function projSort(a,b){return rq.sort==="az"?String(a.title).localeCompare(String(b.title)):rq.sort==="status"?String(a.status).localeCompare(String(b.status)):String(b.start||b.published||"").localeCompare(String(a.start||a.published||""))}
+V.research=()=>{
+  const sel=SH(C.pubs).filter(p=>p.selected);
+  return `
+<section class="view" style="position:relative"><div class="wrap" style="position:relative">
+  ${STAIN("right:-140px;top:-80px",420,.05,11)}
+  <p class="eyebrow">${esc(C.nav.research.label)}</p>
+  <h1 class="page">${ed("site.researchTitle",C.site.researchTitle)}</h1>
+  <p class="lede">${ed("site.researchIntro",C.site.researchIntro)}</p>
+  <h2 style="margin-top:64px">${ed("site.themesTitle",C.site.themesTitle)}</h2>
+  <div class="themes">${SH(C.themes).map((th,i)=>{const n=SH(C.projects).filter(p=>p.theme===th.id).length;return `<a class="theme" href="#${esc(th.id)}"><span class="tn">${String(i+1).padStart(2,"0")}</span><h3>${t(th.name)}</h3><p>${t(th.short)}</p><span class="tf">${n?`${n} current project${n>1?"s":""}`:"Explore theme"} <span class="arr">→</span></span></a>`}).join("")}</div>
+  <div id="browse" style="margin-top:96px">
+    <h2 style="font-size:clamp(26px,3.2vw,36px);max-width:760px;line-height:1.2">${ed("site.browseTitle",C.site.browseTitle)}</h2>
+    <div class="searchbar"><select id="rq-theme"><option value="">All research themes</option>${SH(C.themes).map(th=>`<option value="${esc(th.id)}" ${rq.theme===th.id?"selected":""}>${esc(th.name)}</option>`).join("")}</select>
+      <input type="text" id="rq-q" placeholder="Enter keywords…" value="${esc(rq.q)}">
+      <select id="rq-sort"><option value="newest" ${rq.sort==="newest"?"selected":""}>Newest first</option><option value="az" ${rq.sort==="az"?"selected":""}>A to Z</option><option value="status" ${rq.sort==="status"?"selected":""}>Status</option></select></div>
+    <div id="rq-out">${browseHTML()}</div>
+  </div>
+  ${sel.length?`<h2 style="margin-top:96px">Selected publications</h2><div class="publist">${sel.slice(0,6).map(pubItem).join("")}</div><p style="margin-top:20px"><a href="#publications" class="linkbtn" style="color:var(--red)">All publications →</a></p>`:""}
+</div></section>`};
+function browseHTML(){
+  const q=rq.q.toLowerCase();
+  const list=SH(C.projects).filter(p=>(!rq.theme||p.theme===rq.theme)&&(!q||[p.title,p.summary,p.body,themeName(p),p.collaborators].join(" ").toLowerCase().includes(q))).sort(projSort);
+  return `<p class="mono" style="margin:22px 0 4px">Showing ${list.length} of ${SH(C.projects).length} project${SH(C.projects).length===1?"":"s"}</p>
+    ${list.length?`<div class="pgrid">${list.map(projCard).join("")}</div>`:`<div class="empty" style="margin-top:16px">No projects match. Try another theme or keyword.</div>`}`;
+}
+function wireBrowse(){
+  const th=document.getElementById("rq-theme"),q=document.getElementById("rq-q"),so=document.getElementById("rq-sort"),out=document.getElementById("rq-out");if(!th)return;
+  const go=()=>{rq.theme=th.value;rq.q=q.value;rq.sort=so.value;out.innerHTML=browseHTML()};
+  th.onchange=go;so.onchange=go;q.oninput=go;
+}
+V.theme=id=>{
+  const i=C.themes.findIndex(x=>x.id===id),th=C.themes[i],k=f=>`themes.${i}.${f}`;
+  const projs=SH(C.projects).filter(p=>p.theme===id);
+  const inTheme=SH(C.pubs).filter(p=>(p.themes||[]).includes(id));
+  const pubs=(inTheme.filter(p=>p.selected).length?inTheme.filter(p=>p.selected):inTheme).slice(0,5);
+  return `
+<section class="view" style="position:relative"><div class="wrap" style="position:relative">
+  ${STAIN("right:-160px;top:-60px",380,.05,i+3)}
+  <div class="crumbs mono"><a href="#research">Our research</a> <span>›</span> Research themes <span>›</span> ${t(th.name)}</div>
+  <div class="proj-layout">
+    <aside class="proj-side"><p class="eyebrow">Research themes</p>
+      <div class="side-list">${SH(C.themes).map(x=>`<a href="#${esc(x.id)}" class="${x.id===id?"on":""}">${t(x.name)}</a>`).join("")}</div></aside>
+    <article>
+      <p class="eyebrow">Research theme</p>
+      <h1 class="page" style="font-size:clamp(36px,5vw,54px)">${ed(k("name"),th.name)}</h1>
+      <p class="lede" style="color:var(--ink);font-size:20px">${ed(k("short"),th.short)}</p>
+      <div class="proj-body">${String(th.body||"").split(/\n\s*\n/).filter(Boolean).map(x=>`<p>${t(x).replace(/\n/g,"<br>")}</p>`).join("")}</div>
+      <h2 style="margin-top:56px;font-size:22px">Current projects</h2>
+      ${projs.length?`<div class="pgrid two">${projs.map(projCard).join("")}</div>`:`<p class="help" style="font-size:15px">No current projects in this theme yet. <a href="#get-involved" style="color:var(--red)">Get in touch</a> if you'd like to collaborate.</p>`}
+      <h2 style="margin-top:56px;font-size:22px">Selected publications</h2>
+      ${pubs.length?`<div class="publist">${pubs.map(pubItem).join("")}</div>`:`<p class="help" style="font-size:15px">Publications from this theme will appear here.</p>`}
+      <p style="margin-top:20px"><a href="#publications" onclick="pub.theme='${esc(id)}'" class="linkbtn" style="color:var(--red)">All publications in ${esc(th.name)} →</a></p>
+    </article>
+  </div>
+</div></section>`};
+V.project=id=>{
+  const i=C.projects.findIndex(p=>p.id===id);if(i<0)return V.research();
+  const p=C.projects[i],k=f=>`projects.${i}.${f}`;
+  const people=(p.people||[]).map(n=>[C.team.find(m=>m.name===n),C.team.findIndex(m=>m.name===n)]).filter(([m])=>m&&!m.hidden&&!m.vacancy);
+  const linked=SH(C.pubs).filter(x=>(x.projects||[]).includes(p.id)).map(x=>{const u=pubLink(x);return u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(x.title)}</a>`:esc(x.title)});
+  const pubs=linked.concat(String(p.publications||"").split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{const [title,url]=l.split("|").map(x=>x.trim());return url&&safeUrl(url)?`<a href="${esc(url)}" target="_blank" rel="noopener">${esc(title)}</a>`:esc(title)}));
+  const fields=[["Research theme",themeOf(p)?`<a href="#${esc(p.theme)}">${esc(themeName(p))}</a>`:esc(p.area||"")],["Status",p.status?`<span class="badge ${statusClass(p.status)}">${esc(p.status)}</span>`:""],["Dates",esc(projDates(p))],
+    ["Publications",pubs.length?pubs.map(x=>`<div>${x}</div>`).join(""):""],["Funding agency",p.funding?ed(k("funding"),p.funding):""],["Collaborators",p.collaborators?ed(k("collaborators"),p.collaborators):""]].filter(([,v])=>v);
+  return `
+<section class="view"><div class="wrap">
+  <div class="crumbs mono"><a href="#research">Our research</a> <span>›</span> ${t(p.title)}</div>
+  <div class="proj-layout">
+    <aside class="proj-side">
+      <p class="eyebrow">Our projects</p>
+      <div class="side-list">${SH(C.projects).map(x=>`<a href="#${esc(x.id)}" class="${x.id===p.id?"on":""}">${t(x.title)}</a>`).join("")}</div>
+      <p class="eyebrow" style="margin-top:28px">Research themes</p><div class="side-list">${SH(C.themes).map(x=>`<a href="#${esc(x.id)}" class="${x.id===p.theme?"on":""}">${t(x.name)}</a>`).join("")}</div>
+    </aside>
+    <article>
+      <h1 class="page" style="font-size:clamp(34px,4.6vw,48px)">${ed(k("title"),p.title)}</h1>
+      ${p.published?`<p class="mono">Published on ${fmtDate(p.published)}</p>`:""}
+      <div class="proj-body">${String(p.body||"").split(/\n\s*\n/).map(x=>`<p>${t(x).replace(/\n/g,"<br>")}</p>`).join("")}</div>
+      ${fields.length?`<dl class="facts">${fields.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join("")}</dl>`:""}
+      ${people.length?`<h2 style="margin-top:56px;font-size:22px">Related people</h2><div class="tgrid" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">${people.map(([m,j])=>`
+        <button class="tile" onclick="openPerson(${j})">${portrait(m,j)}<span class="nm">${t(m.name)}</span><span class="rl">${t(m.role)}</span><span class="rl" style="color:var(--red);margin-top:-16px">View profile</span></button>`).join("")}</div>`:""}
+    </article>
+  </div>
+</div></section>`};
+
+let pub={q:"",type:"",status:"",tag:"",theme:""};
+V.publications=()=>{
+  const ps=SH(C.pubs), types=[...new Set(ps.map(p=>p.type).filter(Boolean))], sts=[...new Set(ps.map(p=>p.status).filter(Boolean))], tags=[...new Set(ps.flatMap(p=>tagList(p.tags)))];
+  const list=ps.filter(p=>(!pub.theme||(p.themes||[]).includes(pub.theme))&&(!pub.type||p.type===pub.type)&&(!pub.status||p.status===pub.status)&&(!pub.tag||tagList(p.tags).includes(pub.tag))&&(!pub.q||JSON.stringify(p).toLowerCase().includes(pub.q.toLowerCase())))
+    .sort((a,b)=>String(b.year).localeCompare(String(a.year)));
+  const chipRow=(k,arr)=>`<div class="chips"><button class="chip ${!pub[k]?"dark":""}" onclick="pub.${k}='';render()">All ${ps.length}</button>${arr.map(x=>`<button class="chip ${pub[k]===x?"dark":""}" onclick="pub.${k}='${esc(x)}';render()">${esc(x)} ${ps.filter(p=>p[k]===x).length}</button>`).join("")}</div>`;
+  return `
+<section class="view"><div class="wrap">
+  <p class="eyebrow">Publications and talks</p>
+  <h1 class="page">${ed("site.pubsTitle",C.site.pubsTitle)}</h1>
+  <p class="lede">${ed("site.pubsIntro",C.site.pubsIntro)}</p>
+  ${ps.length?`
+  <div class="field" style="max-width:520px;margin-top:36px"><input type="text" id="pubq" placeholder="Search titles, authors, venues" value="${esc(pub.q)}"></div>
+  <div class="filters">${SH(C.themes).some(th=>ps.some(p=>(p.themes||[]).includes(th.id)))?`<span class="mono">THEME</span><div class="chips"><button class="chip ${!pub.theme?"dark":""}" onclick="pub.theme='';render()">All ${ps.length}</button>${C.themes.filter(th=>ps.some(p=>(p.themes||[]).includes(th.id))).map(th=>`<button class="chip ${pub.theme===th.id?"dark":""}" onclick="pub.theme='${esc(th.id)}';render()">${esc(th.name)} ${ps.filter(p=>(p.themes||[]).includes(th.id)).length}</button>`).join("")}</div>`:""}<span class="mono">TYPE</span>${chipRow("type",types)}<span class="mono">STATUS</span>${chipRow("status",sts)}
+   ${tags.length?`<span class="mono">TAGS</span><div class="tags" style="margin:0">${tags.map(x=>`<button class="tag" style="${pub.tag===x?"text-decoration:underline":""}" onclick="pub.tag=pub.tag==='${esc(x)}'?'':'${esc(x)}';render()">#${esc(x)}</button>`).join("")}</div>`:""}</div>
+  <p class="mono">Showing ${list.length} of ${ps.length}</p>
+  ${list.map(p=>`<div class="post"><div style="font-size:28px;font-weight:600;color:var(--muted)">${esc(p.year)}</div><div>
+     <span class="mono" style="letter-spacing:.12em">${esc((p.type||"").toUpperCase())}</span> ${p.status?`<span class="badge ${statusClass(p.status)}">${esc(p.status)}</span>`:""}
+     <h3 style="margin:8px 0 6px;cursor:default;font-size:19px">${esc(p.title)}</h3><div>${esc(p.authors)}</div>
+     <div class="meta" style="margin-top:6px">${esc(p.venue)}</div>
+     <div style="margin-top:8px;font-family:var(--mono);font-size:13px">${p.doi?`<span class="code">DOI</span>${esc(p.doi)} &nbsp; `:""}${p.link?`<span class="code">LINK</span><a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.link.replace(/^https?:\/\//,""))}</a>`:""}</div>
+     <div class="tags">${tagList(p.tags).map(x=>`<button class="tag" onclick="pub.tag='${esc(x)}';render()">#${esc(x)}</button>`).join("")}</div>
+   </div></div>`).join("")}
+  <p class="mono" style="margin-top:28px">Titles of planned work are working titles and may change.</p>`
+  :`<div class="empty" style="margin-top:40px">Nothing published yet. The first protocol will appear here once it is registered.</div>`}
+</div></section>`};
+
+let tagFilter="";
+const slug=x=>String(x||"").toLowerCase().replace(/[\[\]]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,60);
+const postId=p=>p.id||("post-"+slug(p.title));
+const readMins=p=>Math.max(1,Math.round(String(p.body||"").split(/\s+/).length/220));
+/* small markdown: ## heading, ### subheading, - bullets, 1. numbered, > quote, **bold**, *italic*, [text](https://link) */
+function inline(x){
+  let h=esc(x);
+  h=h.replace(/\[([^\]]+)\]\(((?:https?:\/\/|#|\/)[^)\s]+)\)/g,(m,a,u)=>`<a href="${u}"${u[0]==="#"?"":' target="_blank" rel="noopener"'}>${a}</a>`);
+  h=h.replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/(^|[^*])\*([^*\s][^*]*)\*/g,"$1<i>$2</i>");
+  return h.replace(/\[([^\]]+)\](?!\()/g,'<span class="ph">$1</span>').replace(/\n/g,"<br>");
+}
+function md(src){
+  return String(src||"").replace(/\r/g,"").split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean).map(b=>{
+    const lines=b.split("\n");
+    const im=b.match(/^!\[([^\]]*)\]\(([^)\s]+)\)$/);
+    if(im&&safeUrl(im[2])||im&&/^data:image\//.test(im[2]))return `<figure><img src="${esc(im[2])}" alt="${esc(im[1])}" loading="lazy">${im[1]?`<figcaption>${inline(im[1])}</figcaption>`:""}</figure>`;
+    if(/^###\s/.test(b))return `<h3>${inline(b.replace(/^###\s+/,""))}</h3>`;
+    if(/^##\s/.test(b))return `<h2>${inline(b.replace(/^##\s+/,""))}</h2>`;
+    if(lines.every(l=>/^[-*]\s/.test(l)))return `<ul>${lines.map(l=>`<li>${inline(l.replace(/^[-*]\s+/,""))}</li>`).join("")}</ul>`;
+    if(lines.every(l=>/^\d+[.)]\s/.test(l)))return `<ol>${lines.map(l=>`<li>${inline(l.replace(/^\d+[.)]\s+/,""))}</li>`).join("")}</ol>`;
+    if(lines.every(l=>/^>\s?/.test(l)))return `<blockquote>${inline(lines.map(l=>l.replace(/^>\s?/,"")).join("\n"))}</blockquote>`;
+    return `<p>${inline(b)}</p>`;
+  }).join("");
+}
+const plain=x=>String(x||"").replace(/[#>*\-\[\]()]/g," ");
+const sortedPosts=()=>C.posts.map((p,i)=>({...p,i})).filter(p=>!p.hidden).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+function authorDot(name){
+  const j=C.team.findIndex(m=>m.name===name),m=C.team[j];
+  if(m&&m.photo)return `<span class="adot" style="background:${tileColor(m,j)}"><img src="${esc(m.photo)}" alt=""></span>`;
+  return `<span class="adot ring"></span>`;
+}
+V.blog=()=>{
+  const all=[...new Set(SH(C.posts).flatMap(p=>tagList(p.tags)))];
+  const list=sortedPosts().filter(p=>!tagFilter||tagList(p.tags).includes(tagFilter));
+  return `
+<section class="view"><div class="wrap">
+  <p class="eyebrow">Notes from the program</p>
+  <h1 class="page">${ed("site.blogTitle",C.site.blogTitle)}</h1>
+  <p class="lede">${ed("site.blogIntro",C.site.blogIntro)}</p>
+  ${all.length?`<div class="tags" style="margin:30px 0"><span class="mono" style="margin-right:6px">TAGS</span>${all.map(x=>`<button class="tag" style="${x===tagFilter?"text-decoration:underline":""}" onclick="tagFilter=tagFilter==='${esc(x)}'?'':'${esc(x)}';render()">#${esc(x)}</button>`).join("")}</div>`:`<div style="height:30px"></div>`}
+  ${list.length?list.map(p=>`<div class="post ${p.cover?"has-thumb":""}"><div class="meta">${fmtDate(p.date)}</div><div>
+    <h3><a href="#${esc(postId(p))}" style="text-decoration:none">${t(p.title)}</a></h3><p style="color:var(--muted);margin:6px 0">${t(p.dek)}</p>
+    <div class="meta">${esc(p.author)} · ${readMins(p)} min read</div>
+    <div class="tags">${tagList(p.tags).map(x=>`<button class="tag" onclick="tagFilter='${esc(x)}';render()">#${esc(x)}</button>`).join("")}</div>
+  </div>${p.cover?`<a class="thumb" href="#${esc(postId(p))}" tabindex="-1" aria-hidden="true"><img src="${esc(p.cover)}" alt="" loading="lazy"></a>`:""}</div>`).join(""):`<div class="empty">No posts yet.</div>`}
+</div></section>`};
+V.post=id=>{
+  const sp=sortedPosts(),n=sp.findIndex(p=>postId(p)===id);if(n<0)return V.blog();
+  const p=sp[n],k=f=>`posts.${p.i}.${f}`,newer=sp[n-1],older=sp[n+1];
+  return `
+<section class="view"><div class="wrap">
+  <article class="article">
+    <a href="#blog" class="back">← All posts</a>
+    <h1 class="art-title">${ed(k("title"),p.title)}</h1>
+    <div class="art-meta">${authorDot(p.author)}<span>${esc(p.author)}</span><span>·</span><span>${fmtDate(p.date)}</span><span>·</span><span>${readMins(p)} min read</span></div>
+    ${p.dek?`<p class="art-dek">${t(p.dek)}</p>`:""}
+    ${p.cover?`<figure class="art-cover"><img src="${esc(p.cover)}" alt="${esc(p.coverCaption||"")}">${p.coverCaption?`<figcaption>${t(p.coverCaption)}</figcaption>`:""}</figure>`:""}
+    <div class="art-body">${md(p.body)}</div>
+    ${tagList(p.tags).length?`<div class="tags" style="margin-top:36px">${tagList(p.tags).map(x=>`<a class="tag" href="#blog" onclick="tagFilter='${esc(x)}'" style="text-decoration:none">#${esc(x)}</a>`).join("")}</div>`:""}
+    ${older||newer?`<nav class="art-nav" aria-label="More posts">${older?`<a href="#${esc(postId(older))}"><span class="mono">← Previous</span><b>${t(older.title)}</b></a>`:"<span></span>"}${newer?`<a href="#${esc(postId(newer))}" style="text-align:right"><span class="mono">Next →</span><b>${t(newer.title)}</b></a>`:"<span></span>"}</nav>`:""}
+  </article>
+</div></section>`};
+
+const TILE={Merah:"#b3121f",Soga:"#9a5a2b",Daun:"#3d6b4f",Emas:"#c39a3e",Maroon:"#6b1420",Nila:"#2c3e75",Mawar:"#d4606b",Kunyit:"#d9892b"};
+const TILE_ORDER=["Merah","Daun","Kunyit","Maroon","Nila","Soga","Mawar","Emas"];
+const tileColor=(m,i)=>TILE[m.color]||TILE[TILE_ORDER[i%TILE_ORDER.length]];
+const portrait=(m,i)=>`<div class="portrait" style="background:${tileColor(m,i)}">${m.photo?`<img src="${esc(m.photo)}" alt="${esc(m.name)}">`:`<span class="ini">${esc(initials(m.name))}</span>`}</div>`;
+V.about=()=>{
+  return `
+<section class="view"><div class="wrap">
+  <p class="eyebrow">${esc(C.nav.about.label)}</p>
+  <h1 class="page">${ed("site.aboutTitle",C.site.aboutTitle)}</h1>
+  <p class="lede">${ed("site.aboutIntro",C.site.aboutIntro)}</p>
+  <div class="tgrid" style="margin-top:48px">${C.team.map((m,i)=>m.hidden?"":m.vacancy?`
+    <a class="tile vacancy" href="#get-involved"><div class="portrait"><span class="plus">+</span></div><span class="nm">${t(m.name||"This could be you")}</span><span class="rl">${t(m.role||"Open position")}</span></a>`:`
+    <button class="tile" onclick="openPerson(${i})">${portrait(m,i)}<span class="nm">${t(m.name)}</span>${m.role?`<span class="rl">${t(m.role)}</span>`:`<span class="rl"></span>`}</button>`).join("")}</div>
+  ${peopleList(C.site.alumniTitle,SH(C.alumni),"")}
+  ${peopleList(C.site.collabTitle,SH(C.collabPeople),C.site.collabNote)}
+</div></section>`};
+V.impact=()=>{
+  const st=SH(C.stats),rp=SH(C.reports).sort((a,b)=>String(b.year).localeCompare(String(a.year))),gl=C.gallery.map((g,i)=>[g,i]).filter(([g])=>!g.hidden&&g.image);
+  return `
+<section class="view" style="position:relative"><div class="wrap" style="position:relative">
+  ${STAIN("right:-150px;top:-70px",420,.05,13)}
+  <p class="eyebrow">${esc(C.nav.impact.label)}</p>
+  <h1 class="page">${ed("site.impactTitle",C.site.impactTitle)}</h1>
+  <p class="lede">${ed("site.impactIntro",C.site.impactIntro)}</p>
+  ${st.length?`<div class="imp-sec"><h2>${ed("site.statsTitle",C.site.statsTitle)}</h2><div class="stats">${st.map(x=>`<div class="stat"><b>${t(x.value)}</b><span>${t(x.label)}</span></div>`).join("")}</div></div>`:""}
+  ${rp.length?`<div class="imp-sec"><h2>${ed("site.reportsTitle",C.site.reportsTitle)}</h2><div class="reports">${rp.map(r=>{const u=safeUrl(r.file)?r.file:safeUrl(r.link)?r.link:"";return `
+    <${u?`a href="${esc(u)}" target="_blank" rel="noopener"`:"div"} class="report">
+      <div class="rcover">${r.cover?`<img src="${esc(r.cover)}" alt="">`:`<div class="rph"><span class="mono">${esc(r.year)}</span>${FLOWER(34)}<b>${t(r.title)}</b></div>`}</div>
+      <div class="rbody"><span class="mono">${esc(r.year)}</span><h3>${t(r.title)}</h3><p>${t(r.summary)}</p>${u?`<span class="rlink">${r.file?"Download PDF":"Read the report"} <span class="arr">→</span></span>`:""}</div>
+    </${u?"a":"div"}>`}).join("")}</div></div>`:""}
+  ${gl.length?`<div class="imp-sec"><h2>${ed("site.galleryTitle",C.site.galleryTitle)}</h2><div class="gallery">${gl.map(([g,i])=>`<button class="gimg ${g.wide?"wide":""}" onclick="openPhoto(${i})"><img src="${esc(g.image)}" alt="${esc(g.alt||g.caption||"")}" loading="lazy">${g.caption?`<span class="gcap">${t(g.caption)}</span>`:""}</button>`).join("")}</div></div>`:""}
+  ${!st.length&&!rp.length&&!gl.length?`<div class="empty" style="margin-top:40px">Reports and photos will appear here.</div>`:""}
+</div></section>`};
+function openPhoto(i){
+  const g=C.gallery[i];if(!g||editing)return;const el=document.getElementById("modal");
+  const list=C.gallery.map((x,j)=>[x,j]).filter(([x])=>!x.hidden&&x.image).map(([,j])=>j),k=list.indexOf(i);
+  el.innerHTML=`<div class="lightbox" role="dialog" aria-label="Photo"><img src="${esc(g.image)}" alt="${esc(g.alt||g.caption||"")}">
+    <div class="lbcap"><div>${g.caption?`<b>${t(g.caption)}</b>`:""}${g.date?`<span class="mono">${esc(g.date)}</span>`:""}</div>
+    <div class="lbnav">${list.length>1?`<button class="mini" onclick="openPhoto(${list[(k-1+list.length)%list.length]})">←</button><button class="mini" onclick="openPhoto(${list[(k+1)%list.length]})">→</button>`:""}<button class="mini" onclick="closePerson()">Close</button></div></div></div>`;
+  el.classList.add("on");
+}
+async function uploadImage(file,max=1800){
+  const img=await loadImg(URL.createObjectURL(file));const k=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement("canvas");
+  c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+  if(assets){const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",.86));const up=await assets.upload(new File([blob],"photo.jpg",{type:"image/jpeg"}));return up.url||("/_blob/"+up.id)}
+  const k2=Math.min(1,900/Math.max(c.width,c.height)),c2=document.createElement("canvas");c2.width=Math.round(c.width*k2);c2.height=Math.round(c.height*k2);c2.getContext("2d").drawImage(c,0,0,c2.width,c2.height);return c2.toDataURL("image/jpeg",.8);
+}
+function peopleList(title,arr,note){
+  if(!(arr||[]).length&&!note)return "";
+  return `<div class="plist"><h2>${esc(title)}</h2>${(arr||[]).length?`<ul>${arr.map(x=>`<li>${safeUrl(x.url)?`<a href="${esc(x.url)}" target="_blank" rel="noopener">${t(x.name)}</a>`:`<b>${t(x.name)}</b>`}${x.desc?` <span class="dash">–</span> ${inline(x.desc)}`:""}</li>`).join("")}</ul>`:`<p>${inline(note)}</p>`}</div>`;
+}
+function openPerson(i){
+  if(editing)return;const m=C.team[i];if(!m)return;
+  const el=document.getElementById("modal");
+  el.innerHTML=`<div class="box" role="dialog" aria-label="${esc(m.name)}">${portrait(m,i)}<div class="txt">
+    <button class="icon-btn x" onclick="closePerson()" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <h3 style="font-size:26px">${t(m.name)}</h3>
+    <div style="color:var(--muted);margin:4px 0 14px">${t(m.role)}${m.role&&m.aff?" · ":""}<i>${t(m.aff)}</i></div>
+    <p>${t(m.bio).replace(/\n/g,"<br>")}</p>
+    <div class="chips" style="margin-top:16px">${personLinks(m)}</div>
+  </div></div>`;
+  el.classList.add("on");
+}
+function personLinks(m){
+  const L=[];const add=(lab,u)=>{u=String(u||"").trim();if(u)L.push(`<a class="chip" href="${esc(u)}" target="_blank" rel="noopener">${esc(lab)}</a>`)};
+  if(m.email)L.push(`<span class="chip">✉ ${esc(m.email)}</span>`);
+  add("Website",m.web);add("LinkedIn",m.linkedin);add("Google Scholar",m.scholar);
+  if(m.orcid){const o=String(m.orcid).trim();add("ORCID",/^https?:/.test(o)?o:"https://orcid.org/"+o)}
+  add("ResearchGate",m.researchgate);add("GitHub",m.github);
+  if(m.social)add(/bsky/.test(m.social)?"Bluesky":/x\.com|twitter/.test(m.social)?"X":"Social",m.social);
+  add("CV",m.cv);if(m.otherUrl)add(m.otherLabel||"Link",m.otherUrl);
+  return L.join("");
+}
+function closePerson(){document.getElementById("modal").classList.remove("on")}
+
+function copyText(txt,msg){try{navigator.clipboard.writeText(txt).then(()=>toast(msg||"Copied"),()=>toast("Copy was blocked. Select the text instead."))}catch(e){toast("Copy was blocked. Select the text instead.")}}
+const ulist=x=>{const items=String(x||"").split("\n").map(l=>l.replace(/^[-*]\s*/,"").trim()).filter(Boolean);return items.length?`<ul>${items.map(l=>`<li>${inline(l)}</li>`).join("")}</ul>`:""};
+V["get-involved"]=()=>{
+  const em=C.site.contact||"";
+  const emChip=`<span class="emchip">${t(em)}</span><button class="mini" onclick="copyText(${esc(JSON.stringify(em))},'Email copied')">Copy email</button>`;
+  const learn=String(C.site.learn||"").split("\n").map(l=>l.split("|").map(x=>x.trim())).filter(a=>a[0]);
+  const facts=o=>[["Organisation",o.org],["Department",o.dept],["Location",o.location],["Timeline",o.timeline],["Commitment",o.commitment],["Pay",o.pay]].filter(([,v])=>v&&String(v).trim());
+  const pair=(at,a,bt,b)=>(a||b)?`<div class="gi-two">${a?`<div><h3>${esc(at)}</h3>${ulist(a)}</div>`:"<div></div>"}${b?`<div><h3>${esc(bt)}</h3>${ulist(b)}</div>`:"<div></div>"}</div>`:"";
+  return `
+<section class="view gi"><div class="wrap">
+  <h1 class="page">${ed("site.involvedTitle",C.site.involvedTitle)}</h1>
+  <p class="lede" data-k="site.involvedIntro">${inline(C.site.involvedIntro)}</p>
+  <h2 style="margin-top:64px">${ed("site.involvedSummaryTitle",C.site.involvedSummaryTitle)}</h2>
+  <p class="help" style="font-size:14px;margin:-4px 0 18px">${ed("site.involvedSummaryNote",C.site.involvedSummaryNote)}</p>
+  <div class="gi-cards">${C.opps.map((o,i)=>o.hidden?"":`<a class="gi-card ${o.open?"open":"shut"} ${o.wide?"wide":""}" ${o.detail?`href="#role-${i}" onclick="event.preventDefault();document.getElementById('role-${i}').scrollIntoView({behavior:'smooth'})"`:""}><div class="hd">${t(o.title)}</div><div class="bd">${inline(o.summary)}</div></a>`).join("")}</div>
+  ${C.site.involvedReflect?`<p class="gi-reflect" data-k="site.involvedReflect">${inline(C.site.involvedReflect)}</p>`:""}
+  <div class="gi-callout"><p>${inline(C.site.applyCallout).replace(/email us/i,`email <span class="emchip">${t(em)}</span>`)}</p><button class="btn sm" onclick="copyText(${esc(JSON.stringify(em))},'Email copied')">Copy email</button></div>
+  ${C.opps.map((o,i)=>o.detail&&!o.hidden?`<div class="gi-role" id="role-${i}">
+    <p class="mono" style="letter-spacing:.12em;text-transform:uppercase;font-size:11px">${esc(o.eyebrow)}</p>
+    <h2>${t(o.title)}</h2>
+    ${o.lede?`<p class="lede" style="font-size:17px">${inline(o.lede)}</p>`:""}
+    ${facts(o).length?`<div class="gi-facts">${facts(o).map(([k,v])=>`<div><span>${k}</span><b>${t(v)}</b></div>`).join("")}</div>`:""}
+    ${pair(o.l1t,o.l1,o.l2t,o.l2)}${pair(o.l3t,o.l3,o.l4t,o.l4)}
+    ${o.apply||o.subject?`<div class="gi-apply"><h3>${esc(o.applyTitle||"How to apply")}</h3>${o.apply?`<p>${inline(o.apply)}</p>`:""}<div class="emrow">${emChip}</div>
+      ${o.subject?`<p class="mono" style="margin:18px 0 6px;font-size:11px;letter-spacing:.12em">SUBJECT LINE</p><div class="subj"><code>${esc(o.subject)}</code><button class="mini" onclick="copyText(${esc(JSON.stringify(o.subject))},'Subject line copied')">Copy</button></div>`:""}</div>`:""}
+  </div>`:"").join("")}
+  ${learn.length?`<div class="gi-role"><h2 style="font-size:22px">${esc(C.site.learnTitle)}</h2><div class="gi-learn">${learn.map(([a,u,src])=>`<div>${safeUrl(u)?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(a)}</a>`:esc(a)}${src?`<span>, ${esc(src)}</span>`:""}</div>`).join("")}</div></div>`:""}
+</div></section>`};
+
+/* =============== Interactive batik cloth (home) =============== */
+const BK={s:0,timers:[],dye:0,raf:0,drops:0,last:null,user:false};
+function bkGeometry(){
+  const P=[],I=[],L=[],V=[],W=[],D=[],B=[];
+  const f=n=>Math.round(n*10)/10;
+  const petal=(R,w,a)=>`M0 ${f(-R*a)} C ${f(w)} ${f(-R*.45)}, ${f(w*1.05)} ${f(-R*.8)}, 0 ${f(-R)} C ${f(-w*1.05)} ${f(-R*.8)}, ${f(-w)} ${f(-R*.45)}, 0 ${f(-R*a)} Z`;
+  const pl=' pathLength="1"';
+  // centre flower
+  for(let k=0;k<8;k++){P.push(`<path${pl} transform="translate(300 300) rotate(${k*45})" d="${petal(168,56,.2)}"/>`);
+    W.push(`<path${pl} transform="translate(300 300) rotate(${k*45})" d="M0 -62 C 6 -95, 6 -118, 0 -142"/>`);
+    W.push(`<circle${pl} transform="translate(300 300) rotate(${k*45})" cx="0" cy="-152" r="3"/>`)}
+  for(let k=0;k<8;k++)I.push(`<path${pl} transform="translate(300 300) rotate(${22.5+k*45})" d="${petal(104,30,.3)}"/>`);
+  W.push(`<circle${pl} cx="300" cy="300" r="34"/>`);
+  // corner flowers
+  [[78,78,135],[522,78,225],[78,522,45],[522,522,315]].forEach(([x,y])=>{
+    for(let k=0;k<5;k++)P.push(`<path${pl} transform="translate(${x} ${y}) rotate(${k*72+18})" d="${petal(60,23,.16)}"/>`);
+    I.push(`<circle${pl} cx="${x}" cy="${y}" r="10"/>`);
+    for(let k=0;k<5;k++)W.push(`<path${pl} transform="translate(${x} ${y}) rotate(${k*72+18})" d="M0 -18 L0 -44"/>`);
+  });
+  // edge buds
+  [[300,58,0],[542,300,90],[300,542,180],[58,300,270]].forEach(([x,y,r])=>{
+    [-34,0,34].forEach(a=>P.push(`<path${pl} transform="translate(${x} ${y}) rotate(${r+a})" d="${petal(38,13,.1)}"/>`));
+    I.push(`<circle${pl} cx="${x}" cy="${y}" r="5"/>`);
+  });
+  // vines with leaves
+  const leaf=(x,y,ang,s)=>`<path${pl} transform="translate(${f(x)} ${f(y)}) rotate(${f(ang)}) scale(${s})" d="M0 0 C 8 -8, 24 -8, 32 0 C 24 8, 8 8, 0 0 Z"/>`;
+  const vine=(x0,y0,x1,y1,bend,leaves)=>{
+    const mx=(x0+x1)/2,my=(y0+y1)/2,dx=x1-x0,dy=y1-y0,len=Math.hypot(dx,dy),cx=mx-dy/len*bend,cy=my+dx/len*bend;
+    V.push(`<path${pl} d="M${f(x0)} ${f(y0)} Q ${f(cx)} ${f(cy)} ${f(x1)} ${f(y1)}"/>`);
+    leaves.forEach((t,i)=>{const x=(1-t)*(1-t)*x0+2*(1-t)*t*cx+t*t*x1,y=(1-t)*(1-t)*y0+2*(1-t)*t*cy+t*t*y1,
+      tx=2*(1-t)*(cx-x0)+2*t*(x1-cx),ty=2*(1-t)*(cy-y0)+2*t*(y1-cy),ang=Math.atan2(ty,tx)*180/Math.PI;L.push(leaf(x,y,ang+(i%2?52:-52),.95))});
+  };
+  [[45,1],[135,-1],[225,1],[315,-1]].forEach(([a,s])=>{const r=a*Math.PI/180,c=Math.cos(r),n=Math.sin(r);
+    vine(300+c*178,300+n*178,300+c*(311-66),300+n*(311-66),26*s,[.3,.62])});
+  [[0,-1],[1,0],[0,1],[-1,0]].forEach(([c,n],i)=>vine(300+c*172,300+n*172,300+c*226,300+n*226,(i%2?1:-1)*10,[.5]));
+  // isen-isen dots
+  for(let k=0;k<64;k++){const a=k/64*Math.PI*2;D.push(`<circle cx="${f(300+Math.cos(a)*186)}" cy="${f(300+Math.sin(a)*186)}" r="1.9"/>`)}
+  let seed=7;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
+  for(let k=0;k<420&&D.length<210;k++){const x=30+rnd()*540,y=30+rnd()*540;
+    const far=[[300,300,215],[78,78,82],[522,78,82],[78,522,82],[522,522,82],[300,58,55],[542,300,55],[300,542,55],[58,300,55]].every(([a,b,r])=>Math.hypot(x-a,y-b)>r);
+    if(far)D.push(`<circle cx="${f(x)}" cy="${f(y)}" r="${f(1+rnd()*1.1)}"/>`)}
+  // border with fine diagonal ticks
+  B.push(`<rect x="12" y="12" width="576" height="576"/><rect x="22" y="22" width="556" height="556"/>`);
+  for(let i=0;i<46;i++){const t=26+i*12;B.push(`<path d="M${t} 14 l6 6M${t} 580 l6 6M14 ${t} l6 6M580 ${t} l6 6"/>`)}
+  const ribbon=`<path${pl} d="M300 282 C 314 282, 316 300, 306 309 L 289 330 M300 282 C 286 282, 284 300, 294 309 L 311 330"/>`;
+  // crackle (retak) lines
+  const C2=[];for(let k=0;k<70;k++){let x=40+rnd()*520,y=40+rnd()*520,d=`M${f(x)} ${f(y)}`,a=rnd()*Math.PI*2;
+    for(let j=0;j<5;j++){a+=(rnd()-.5)*1.4;x+=Math.cos(a)*(10+rnd()*22);y+=Math.sin(a)*(10+rnd()*22);d+=` L${f(x)} ${f(y)}`}C2.push(`<path d="${d}"/>`)}
+  return {P:P.join(""),I:I.join(""),L:L.join(""),V:V.join(""),W:W.join(""),D:D.join(""),B:B.join(""),R:ribbon,C:C2.join("")};
+}
+let BKG=null;
+function batikSVG(){
+  const g=BKG||(BKG=bkGeometry());
+  return `<svg id="cloth" viewBox="0 0 600 600" role="img" aria-label="An interactive batik cloth with red flowers. At its centre, a small red ribbon.">
+  <defs>
+    <filter id="bleed" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency=".022" numOctaves="3" seed="4"/><feDisplacementMap in="SourceGraphic" scale="46" xChannelSelector="R" yChannelSelector="G"/><feGaussianBlur stdDeviation="2.2"/></filter>
+    <filter id="bleed2" x="-50%" y="-50%" width="200%" height="200%"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="9"/><feDisplacementMap in="SourceGraphic" scale="22" xChannelSelector="R" yChannelSelector="G"/><feGaussianBlur stdDeviation="3"/></filter>
+    <filter id="linen" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="2"/><feColorMatrix values="0 0 0 0 .45  0 0 0 0 .35  0 0 0 0 .33  0 0 0 .07 0"/></filter>
+    <g id="gP">${g.P}</g><g id="gI">${g.I}</g><g id="gL">${g.L}</g><g id="gV">${g.V}</g><g id="gW">${g.W}</g><g id="gR">${g.R}</g>
+    <mask id="dyeM" maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="600"><rect width="600" height="600" fill="#000"/><g filter="url(#bleed)" fill="#fff"><circle id="dyeFront" cx="300" cy="300" r="0"/><g id="drops"></g></g></mask>
+    <mask id="crM" maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="600"><g fill="#fff"><use href="#gP"/><use href="#gI"/><use href="#gL"/></g></mask>
+  </defs>
+  <rect class="bk-cloth" width="600" height="600"/>
+  <rect width="600" height="600" filter="url(#linen)"/>
+  <g id="stains" class="bk-stain" filter="url(#bleed2)"></g>
+  <g mask="url(#dyeM)">
+    <rect width="600" height="600" class="bk-wash"/>
+    <use href="#gV" class="bk-vine"/>
+    <use href="#gL" class="bk-leaf"/>
+    <use href="#gP" class="bk-petal"/>
+    <use href="#gI" class="bk-inner"/>
+    <use href="#gR" class="bk-ribbon"/>
+    <g class="bk-dots">${g.D}</g>
+    <g class="bk-border">${g.B}</g>
+  </g>
+  <g class="bk-crackle" mask="url(#crM)">${g.C}</g>
+  <g class="bk-wax"><use href="#gP"/><use href="#gI"/><use href="#gL"/><use href="#gW"/></g>
+  <g class="bk-pola"><use href="#gP"/><use href="#gI"/><use href="#gL"/><use href="#gV"/><use href="#gW"/><use href="#gR"/></g>
+  <circle class="bk-ring" cx="300" cy="300" r="46" pathLength="1"/>
+</svg>`;
+}
+function bkClear(){BK.timers.forEach(clearTimeout);BK.timers=[];cancelAnimationFrame(BK.raf)}
+function bkTween(from,to,ms,step,done){const t0=performance.now();cancelAnimationFrame(BK.raf);
+  const tick=now=>{const k=Math.min(1,(now-t0)/ms),e=1-Math.pow(1-k,3);step(from+(to-from)*e);if(k<1)BK.raf=requestAnimationFrame(tick);else done&&done()};BK.raf=requestAnimationFrame(tick)}
+function bkSetDye(v){BK.dye=v;const c=document.getElementById("dyeFront");if(c)c.setAttribute("r",(v*470).toFixed(1))}
+function bkSet(s,fromUser){
+  const svg=document.getElementById("cloth");if(!svg)return;
+  const n=Math.min(5,C.stages.length)||5;s=Math.max(0,Math.min(n-1,s));
+  if(fromUser){BK.user=true;BK.timers.forEach(clearTimeout);BK.timers=[]}
+  const prev=BK.s;BK.s=s;
+  for(let i=0;i<5;i++)svg.classList.toggle("s"+i,i<=s);
+  svg.classList.toggle("final",s===4);
+  if(s<2){bkTween(BK.dye,0,500,bkSetDye);if(prev>=2){document.getElementById("drops").innerHTML="";document.getElementById("stains").innerHTML="";BK.drops=0}}
+  else if(BK.dye<1)bkTween(BK.dye,1,s===2&&prev<2?3600:900,bkSetDye);
+  document.querySelectorAll(".stepper button").forEach((b,i)=>{b.classList.toggle("on",i===s);b.setAttribute("aria-pressed",i===s)});
+  const st=C.stages[s]||{},cap=document.getElementById("bkcap");
+  if(cap){cap.classList.remove("in");void cap.offsetWidth;cap.classList.add("in");
+    cap.innerHTML=`<div class="bk-cap-h"><em class="ms" data-k="stages.${s}.mal">${esc(st.mal)}</em><span class="en" data-k="stages.${s}.en">${t(st.en)}</span><span class="mono" style="margin-left:auto">${s+1} / ${n}</span></div>
+      <p data-k="stages.${s}.text">${t(st.text)}</p>${s===2?`<p class="bk-hint">Touch the cloth to let the dye spread.</p>`:""}`;
+    wireEditing()}
+  const prevB=document.getElementById("bkprev"),nextB=document.getElementById("bknext");
+  if(prevB)prevB.disabled=s===0;if(nextB)nextB.textContent=s===n-1?"Begin again":"Next";
+}
+function bkNext(){const n=Math.min(5,C.stages.length);bkSet(BK.s>=n-1?0:BK.s+1,true)}
+function bkDrop(e){
+  if(BK.s<2)return;const svg=document.getElementById("cloth");const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;
+  const p=pt.matrixTransform(svg.getScreenCTM().inverse());
+  if(BK.last&&Math.hypot(p.x-BK.last.x,p.y-BK.last.y)<20&&e.type!=="pointerdown")return;BK.last=p;
+  const NS="http://www.w3.org/2000/svg",drops=document.getElementById("drops"),stains=document.getElementById("stains");
+  const R=18+Math.random()*26,d=document.createElementNS(NS,"circle"),st=document.createElementNS(NS,"circle");
+  [d,st].forEach(c=>{c.setAttribute("cx",p.x.toFixed(1));c.setAttribute("cy",p.y.toFixed(1));c.setAttribute("r","0")});
+  drops.appendChild(d);stains.appendChild(st);BK.drops++;
+  if(drops.childNodes.length>70){drops.firstChild.remove();stains.firstChild.remove()}
+  const t0=performance.now(),grow=now=>{const k=Math.min(1,(now-t0)/900),e2=1-Math.pow(1-k,3);d.setAttribute("r",(R*e2).toFixed(1));st.setAttribute("r",(R*1.3*e2).toFixed(1));if(k<1)requestAnimationFrame(grow)};requestAnimationFrame(grow);
+}
+function initBatik(){
+  bkClear();BK.s=0;BK.dye=0;BK.user=false;BK.drops=0;
+  const svg=document.getElementById("cloth");if(!svg)return;
+  svg.addEventListener("pointerdown",e=>{if(BK.s<2){bkSet(2,true)}bkDrop(e)});
+  svg.addEventListener("pointermove",e=>{if(e.pointerType==="mouse"&&e.buttons===0&&BK.s<2)return;bkDrop(e)});
+  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(reduce){bkSetDye(1);bkSet(4);return}
+  bkSet(0);
+  [1,2,3,4].forEach((s,i)=>BK.timers.push(setTimeout(()=>{if(!BK.user)bkSet(s)},2600+i*4600)));
+}
+
+/* =============== Admin: schemas =============== */
+const F=(k,label,type="text",o={})=>({k,label,type,...o});
+const SECTIONS=[
+  {id:"nav",name:"Menu and pages",desc:"Rename menu items or hide whole pages. A hidden page disappears from the menu and footer, and visitors who open its link land on the home page.",fields:[
+    {row:[F("why.label","Why batik: menu label","text",{flat:1}),F("why.show","Show Why batik page","check",{flat:1})]},
+    {row:[F("research.label","Our research: menu label","text",{flat:1}),F("research.show","Show Our research page","check",{flat:1})]},
+    {row:[F("publications.label","Publications: menu label","text",{flat:1}),F("publications.show","Show Publications page","check",{flat:1})]},
+    {row:[F("blog.label","Blog: menu label","text",{flat:1}),F("blog.show","Show Blog page","check",{flat:1})]},
+    {row:[F("impact.label","Impact: menu label","text",{flat:1}),F("impact.show","Show Impact page","check",{flat:1})]},
+    {row:[F("about.label","About: menu label","text",{flat:1}),F("about.show","Show About page","check",{flat:1})]},
+    {row:[F("involved.label","Get involved: button label","text",{flat:1}),F("involved.show","Show Get involved page","check",{flat:1})]}]},
+  {id:"recruit",name:"Apply button",desc:"Controls the floating button on every page and the line on Get involved.",fields:[
+    F("open","Applications are open","check"),
+    F("deadline","Deadline or wording","text",{help:"e.g. Rolling, no deadline, or 30 January 2027"}),
+    F("pill","Floating button text"),
+    F("closed","Message when closed")]},
+  {id:"site",name:"Page text",desc:"Headings and paragraphs across the site. Square brackets show as highlighted placeholders. You can also click Edit page text to type straight onto the pages.",fields:[
+    {sub:"Site"},F("title","Site title"),F("acronym","What THREAD stands for"),{row:[F("institution","Institution"),F("department","Department")]},F("contact","Contact email"),F("footer","Footer tagline"),
+    {sub:"Home"},F("question","Research question","area"),F("lensLine","Line after the question","text",{help:"The word batik is styled automatically."}),F("partnersTitle","Partner carousel heading"),
+    {sub:"Why batik"},F("whyTitle","Page heading"),F("lens","Intro paragraph","area"),F("whyHiv","Why HIV card","area"),F("whyLens","Why a cultural lens card","area"),
+    {sub:"Our research"},F("researchTitle","Page heading"),F("researchIntro","Intro","area"),{row:[F("themesTitle","Themes heading"),F("browseTitle","Project search heading")]},
+    {sub:"Publications"},F("pubsTitle","Page heading"),F("pubsIntro","Intro","area"),
+    {sub:"Blog"},F("blogTitle","Page heading"),F("blogIntro","Intro","area"),
+    {sub:"About"},F("aboutTitle","Page heading"),F("aboutIntro","Intro","area"),{row:[F("alumniTitle","Alumni heading"),F("collabTitle","Collaborators heading")]},F("collabNote","Collaborators text when the list is empty","text",{help:"e.g. There are many but who is counting?"}),
+    {sub:"Impact"},F("impactTitle","Page heading"),F("impactIntro","Intro","area"),{row:[F("statsTitle","Numbers heading"),F("reportsTitle","Reports heading")]},F("galleryTitle","Photos heading"),
+    {sub:"Get involved"},F("involvedTitle","Page heading"),F("involvedIntro","Intro","area",{help:"**bold** works here"}),{row:[F("involvedSummaryTitle","Summary heading"),F("involvedSummaryNote","Summary note")]},
+    F("involvedReflect","Before you apply","area"),F("applyCallout","Apply box","area"),F("learnTitle","Learn more heading"),F("learn","Learn more links","area",{help:"One per line: Title | https://link | Source"})]},
+  {id:"stages",name:"Batik stages",add:"stage",list:true,hide:false,desc:"The five stages of the interactive cloth on the home page, also shown on Why batik. Keep five stages; each line links batik to HIV.",title:x=>`${x.mal||"Stage"} · ${x.en||""}`,blank:{mal:"",en:"",text:""},fields:[
+    {row:[F("mal","Malay term"),F("en","English")]},F("text","Description","area")]},
+  {id:"alumni",name:"Alumni",add:"person",list:true,desc:"Past team members, listed under the team on About. Names with a link show in red.",title:x=>x.name||"Person",blank:{name:"New person",url:"",desc:""},fields:[
+    {row:[F("name","Name"),F("url","Link","text",{help:"Optional: profile or website"})]},F("desc","Description","text",{help:"e.g. RA, PrEP study (2026–2027), now Master's student at …"})]},
+  {id:"collabPeople",name:"Collaborators",add:"collaborator",list:true,desc:"People you work with, listed at the bottom of About. Organisations with logos go in Partner logos.",title:x=>x.name||"Collaborator",blank:{name:"New collaborator",url:"",desc:""},fields:[
+    {row:[F("name","Name"),F("url","Link","text",{help:"Optional"})]},F("desc","Description","text",{help:"e.g. Associate Professor, Universiti Malaya"})]},
+  {id:"stats",name:"Impact numbers",add:"number",list:true,desc:"Big figures at the top of the Impact page.",title:x=>`${x.value||""} ${x.label||"Number"}`,blank:{value:"",label:""},fields:[
+    {row:[F("value","Number","text",{help:"e.g. 120, 15+, RM 20k"}),F("label","Label","text",{help:"e.g. people reached"})]}]},
+  {id:"reports",name:"Impact reports",add:"report",list:true,desc:"Report cards on the Impact page, newest year first. Upload a PDF, or link to the report online.",title:x=>`${x.year||""} · ${x.title||"Report"}`,blank:()=>({title:"New report",year:String(new Date().getFullYear()),summary:"",cover:"",file:"",fileName:"",link:""}),fields:[
+    {row:[F("title","Title"),F("year","Year")]},F("summary","Summary","area"),
+    F("cover","Cover image","image",{help:"Optional. The first page of the report works well. Without one, a simple batik cover is drawn."}),
+    F("file","Report PDF","file",{help:"Up to 20 MB here, 4 MB on the hosted site. For bigger files, use a link instead."}),
+    F("link","Or link to the report","text",{ph:"https://…"})]},
+  {id:"gallery",name:"Photo gallery",add:"photo",list:true,desc:"Photos in the gallery on the Impact page. They open larger when clicked. Wide photos span two columns.",title:x=>x.caption||(x.image?"Photo":"New photo (no image yet)"),blank:{image:"",caption:"",date:"",alt:"",wide:false},fields:[
+    F("image","Photo","image",{help:"Resized automatically. Ask people's permission before sharing photos of them."}),
+    F("caption","Caption"),{row:[F("date","Date or event","text",{help:"e.g. World AIDS Day, Dec 2026"}),F("alt","Description for screen readers","text",{help:"Leave blank to use the caption"})]},
+    F("wide","Wide photo (spans two columns)","check")]},
+  {id:"partners",name:"Partner logos",add:"partner",list:true,desc:"Partner organisations in the scrolling carousel on the home page. Logos show in grey and turn to colour on hover. Without a logo, the name shows instead. Delete them all to hide the carousel.",title:x=>x.name||"Collaborator",
+   blank:{name:"New collaborator",url:"",logo:""},fields:[
+    F("logo","Logo","logo",{help:"A PNG with a transparent background works best."}),{row:[F("name","Organisation name"),F("url","Website","text",{help:"Optional, e.g. https://…"})]}]},
+  {id:"themes",name:"Themes",add:"theme",list:true,desc:"The theme cards on Our research. Each theme has its own page listing its projects and selected publications.",title:x=>x.name||"Theme",
+   blank:()=>({id:"theme-"+Math.random().toString(36).slice(2,6),name:"New theme",short:"",body:""}),fields:[
+    {row:[F("name","Theme name"),F("id","Page address","text",{help:"Letters, numbers and hyphens, e.g. prep"})]},
+    F("short","Brief description","area",{help:"One sentence for the theme card."}),
+    F("body","Theme overview","area",{cls:"long",help:"Shown on the theme page. Leave a blank line between paragraphs."})]},
+  {id:"projects",name:"Projects",add:"project",list:true,desc:"Projects on the Our research page. Each project gets its own page. Tick Show on home page to feature it under the batik cloth.",title:x=>`${x.title||"Project"} · ${x.status||""}`,
+   blank:()=>({id:"project-"+Math.random().toString(36).slice(2,7),title:"New project",theme:"",status:"Planned",start:"",end:"",published:new Date().toISOString().slice(0,10),summary:"",body:"",funding:"",collaborators:"",publications:"",people:[],featured:false}),fields:[
+    F("title","Title"),
+    {row:[F("theme","Research theme","pick1",{from:"themes"}),F("status","Status","select",{opts:["Planned","Ethics review","In preparation","Underway","Recruiting","Complete"]})]},
+    {row:[F("start","Start","month"),F("end","End","month")]},
+    {row:[F("published","Published on","date"),F("id","Page address","text",{help:"Letters, numbers and hyphens, e.g. project-stigma"})]},
+    F("summary","Card summary","area",{help:"One or two sentences shown on the project card."}),
+    F("body","Project description","area",{cls:"long",help:"Leave a blank line between paragraphs."}),
+    {row:[F("funding","Funding agency"),F("collaborators","Collaborators")]},
+    F("publications","Other publications","area",{help:"Publications in the Publications tab can be linked to this project there. For anything else, one per line, with an optional link after a bar: Report title | https://…"}),
+    F("people","Related people","people"),
+    F("featured","Show on home page","check")]},
+  {id:"team",name:"Team",add:"person",list:true,desc:"People on the About page, shown as a portrait grid. Uploaded photos have their background removed automatically and turn black and white on a batik colour. People appear in this order; use the arrows to reorder.",title:x=>`${x.name||"Person"}${x.role?" · "+x.role:""}`,blank:{name:"New person",group:"Research team",color:"Auto",role:"",aff:"",bio:"",email:"",web:"",linkedin:"",photo:""},fields:[
+    F("photo","Photo","photo",{help:"Head-and-shoulders portraits work best. The first upload loads the background remover (about 55 MB), then it is quick."}),{row:[F("name","Name"),F("role","Role (shown under the name)")]},
+    F("color","Tile colour","select",{opts:["Auto","Merah","Daun","Kunyit","Maroon","Nila","Soga","Mawar","Emas"]}),F("aff","Affiliation"),F("bio","Bio","area"),
+    {row:[F("email","Email"),F("vacancy","Open position (dashed outline)","check",{help:"Shows a dashed + tile that links to Get involved."})]},
+    {sub:"Links",fold:false,help:"Fill in any that apply. Empty ones are hidden. Each shows as a chip under the bio."},
+    {row:[F("web","Website","text",{ph:"https://…"}),F("linkedin","LinkedIn","text",{ph:"https://www.linkedin.com/in/…"})]},
+    {row:[F("github","GitHub","text",{ph:"https://github.com/…"}),F("scholar","Google Scholar","text",{ph:"https://scholar.google.com/citations?user=…"})]},
+    {row:[F("orcid","ORCID","text",{ph:"0000-0000-0000-0000 or full link"}),F("researchgate","ResearchGate","text",{ph:"https://www.researchgate.net/profile/…"})]},
+    {row:[F("social","Bluesky / X","text",{ph:"https://bsky.app/profile/… or https://x.com/…"}),F("cv","CV","text",{ph:"Link to a PDF or page"})]},
+    {row:[F("otherLabel","Other link label","text",{help:"e.g. lab page, portfolio"}),F("otherUrl","Other link","text",{help:"https://… or #get-involved"})]}]},
+  {id:"posts",name:"Blog posts",add:"post",list:true,desc:"Newest first on the Blog page. Each post gets its own page.",title:x=>x.title||"Post",blank:()=>({id:"post-"+Math.random().toString(36).slice(2,7),cover:"",coverCaption:"",title:"New post",date:new Date().toISOString().slice(0,10),author:"Brendon Ban",dek:"",tags:"",body:""}),fields:[
+    F("title","Title"),{row:[F("date","Date","date"),F("author","Author","text",{help:"Use a Team name to show their photo"})]},F("dek","One-line summary"),
+    {row:[F("tags","Tags","text",{help:"Comma separated, e.g. batik, prep"}),F("id","Page address","text",{help:"Letters, numbers and hyphens, e.g. why-batik"})]},
+    F("cover","Cover photo","image",{help:"Optional. Shown at the top of the post and as a thumbnail in the blog list."}),F("coverCaption","Cover caption"),
+    F("body","Post","area",{cls:"long xl",insertImg:1,help:"Blank line between paragraphs.  ## Heading  ·  - bullet point  ·  1. numbered  ·  > quote  ·  **bold**  ·  *italic*  ·  [link text](https://…)  ·  Insert photo adds ![caption](link) where your cursor is"})]},
+  {id:"pubs",name:"Publications",add:"publication",list:true,desc:"Papers, protocols and talks. Link each one to its research themes and projects so it shows on those pages.",title:x=>`${x.year||""} · ${x.title||"Publication"}`,blank:()=>({year:String(new Date().getFullYear()),type:"Protocol",status:"Published",title:"",authors:"",venue:"",doi:"",link:"",tags:""}),fields:[
+    F("title","Title","area"),F("authors","Authors","text",{help:"e.g. Ban, B., & Surname, A."}),
+    {row:[F("year","Year"),F("type","Type","select",{opts:["Protocol","Journal article","Preprint","Conference talk","Poster","Report","Thesis"]})]},
+    {row:[F("status","Status","select",{opts:["Published","Accepted","Under review","In preparation","Planned"]}),F("venue","Venue")]},
+    {row:[F("doi","DOI"),F("link","Link URL")]},F("tags","Tags","text",{help:"Comma separated"}),
+    F("themes","Research themes","pick",{from:"themes"}),F("projects","Related projects","pick",{from:"projects",lab:"title"}),
+    F("selected","Selected publication","check",{help:"Selected publications show on Our research and their theme pages."})]},
+  {id:"opps",name:"Roles",add:"role",list:true,desc:"Each role has a summary card at the top of Get involved and, if Show full section is ticked, its own section with details, lists and how to apply. The contact email, intro and links are in Home and page text.",title:x=>`${x.title||"Role"}${x.open?"":" · not open"}`,
+   blank:{title:"New role",eyebrow:"",open:true,wide:false,detail:true,summary:"",lede:"",org:"",dept:"",location:"",timeline:"",commitment:"",pay:"",l1t:"What you'll do",l1:"",l2t:"What you'll gain",l2:"",l3t:"Required",l3:"",l4t:"Preferred",l4:"",applyTitle:"How to apply",apply:"",subject:""},fields:[
+    {row:[F("title","Role title"),F("eyebrow","Small label above the title","text",{help:"e.g. Study 1 · Scoping review"})]},
+    F("summary","Summary card text","area",{help:"Shown in the coloured card at the top. **bold** works."}),
+    {row:[F("open","Open now (green card)","check"),F("wide","Full-width card","check")]},F("detail","Show full section","check"),
+    F("lede","Section intro","area"),
+    {row:[F("org","Organisation"),F("dept","Department")]},{row:[F("location","Location"),F("timeline","Timeline")]},{row:[F("commitment","Commitment"),F("pay","Pay")]},
+    {row:[F("l1t","List 1 heading"),F("l2t","List 2 heading")]},{row:[F("l1","List 1","area",{help:"One item per line"}),F("l2","List 2","area",{help:"One item per line"})]},
+    {row:[F("l3t","List 3 heading"),F("l4t","List 4 heading")]},{row:[F("l3","List 3","area",{help:"Leave empty to hide"}),F("l4","List 4","area",{help:"Leave empty to hide"})]},
+    F("applyTitle","How to apply heading"),F("apply","How to apply text","area"),F("subject","Email subject line","text",{help:"Visitors can copy it with one click"})]},
+];
+let adminTab="overview", openItems=new Set(), openGroups=new Set(["fg:Site"]);
+const ADMIN_GROUPS=[
+  {name:"Site",desc:"Menu, page headings and the floating apply button.",tabs:["nav","site","recruit"]},
+  {name:"Home",desc:"The batik cloth and the partner logo carousel.",tabs:["stages","partners"]},
+  {name:"Research",desc:"Themes, projects and publications.",tabs:["themes","projects","pubs"]},
+  {name:"People",desc:"Team, alumni and collaborators on About.",tabs:["team","alumni","collabPeople"]},
+  {name:"Stories",desc:"Blog posts and the Impact page.",tabs:["posts","stats","reports","gallery"]},
+  {name:"Get involved",desc:"Open roles and how to apply.",tabs:["opps"]},
+  {name:"Private",desc:"Team-only files, and who can edit the site.",tabs:["resources","access"]}
+];
+const TAB_NAMES={resources:"Research resources",access:"Access"};
+const tabName=id=>TAB_NAMES[id]||SECTIONS.find(s=>s.id===id)?.name||id;
+const tabGroup=id=>ADMIN_GROUPS.find(g=>g.tabs.includes(id));
+function tabCount(id){const a=C[id];if(!Array.isArray(a))return "";const h=a.filter(x=>x&&x.hidden).length;return `${a.length}${h?` · ${h} hidden`:""}`}
+function overviewHTML(){
+  return `<h2 class="panel-h">Overview</h2><p class="panel-d">Pick what you want to change. Everything you edit stays a draft on this device until you press <b>Publish to site</b>.</p>
+  <div class="ov-grid">${ADMIN_GROUPS.map(g=>`<div class="ov-card"><h3>${g.name}</h3><p>${g.desc}</p><div class="ov-links">${g.tabs.map(id=>`<button onclick="goTab('${id}')"><span>${tabName(id)}</span><small>${tabCount(id)}</small></button>`).join("")}</div></div>`).join("")}</div>
+  <div class="note" style="margin-top:24px"><b>Tips.</b> Every list item has a Shown / Hidden switch, so you can keep drafts without deleting them. Use <b>Preview</b> to see your draft on the real pages, and <b>Edit page text</b> to type straight onto them.</div>`;
+}
+function goTab(id){adminTab=id;const g=tabGroup(id);if(g)openGroups.add(g.name);render();window.scrollTo({top:document.querySelector(".adm")?.offsetTop-90||0,behavior:"smooth"})}
+function sideNav(){
+  return `<div class="side-tabs"><button class="${adminTab==="overview"?"on":""}" onclick="goTab('overview')">Overview</button>
+  ${ADMIN_GROUPS.map(g=>`<div class="sgroup"><div class="sg-h">${g.name}</div>${g.tabs.map(id=>`<button class="${id===adminTab?"on":""}" onclick="goTab('${id}')">${tabName(id)}</button>`).join("")}</div>`).join("")}</div>`;
+}
+function fieldsGrouped(fields,path,val){
+  // split on {sub} markers into collapsible groups
+  if(!fields.some(f=>f.sub&&f.fold!==false))return fields.map(f=>fieldHTML(f,path,val)).join("");
+  const out=[];let cur=null;
+  fields.forEach(f=>{if(f.sub){cur={t:f.sub,help:f.help,items:[]};out.push(cur)}else{if(!cur){cur={t:"",items:[]};out.push(cur)}cur.items.push(f)}});
+  return out.map((g,i)=>g.t?`<details class="fgroup" data-fg="${esc(g.t)}" ${openGroups.has("fg:"+g.t)?"open":""}><summary>${esc(g.t)}<span class="chev">›</span></summary><div class="fg-body">${g.help?`<p class="help">${esc(g.help)}</p>`:""}${g.items.map(f=>fieldHTML(f,path,val)).join("")}</div></details>`:g.items.map(f=>fieldHTML(f,path,val)).join("")).join("");
+}
+document.addEventListener("toggle",e=>{const d=e.target;if(d.classList?.contains("fgroup")){d.open?openGroups.add("fg:"+d.dataset.fg):openGroups.delete("fg:"+d.dataset.fg)}},true);
+
+function fieldHTML(f,path,val){
+  if(f.row)return `<div class="row2">${f.row.map(x=>fieldHTML(x,path,val)).join("")}</div>`;
+  if(f.sub)return `<h4 class="fsub">${esc(f.sub)}</h4>${f.help?`<p class="help" style="margin:-4px 0 12px">${esc(f.help)}</p>`:""}`;
+  const kp=String(f.k).split("."),p=JSON.stringify([...path,...kp]).replace(/"/g,"&quot;"), v=getP(val||{},kp), help=f.help?`<div class="help">${esc(f.help)}</div>`:"";
+  switch(f.type){
+    case "check":return `<label class="check"><input type="checkbox" data-p="${p}" data-t="check" ${v?"checked":""}> ${esc(f.label)}</label>${f.help?`<div class="help" style="margin:-8px 0 14px">${esc(f.help)}</div>`:""}`;
+    case "area":return `<div class="field"><label>${esc(f.label)}</label><textarea class="${f.cls||""}" data-p="${p}">${esc(v)}</textarea>${f.insertImg?`<div class="imgbar"><label class="btn ghost sm" style="cursor:pointer">Insert photo<input type="file" accept="image/*" hidden data-insert="${p}"></label><span class="help" data-insstatus="${p}"></span></div>`:""}${help}</div>`;
+    case "select":{const opts=[...new Set([...(f.opts||[]),v].filter(Boolean))];return `<div class="field"><label>${esc(f.label)}</label><select data-p="${p}">${opts.map(o=>`<option ${o===v?"selected":""}>${esc(o)}</option>`).join("")}</select>${help}</div>`}
+    case "num":return `<div class="field"><label>${esc(f.label)}</label><input type="number" data-p="${p}" data-t="num" value="${esc(v)}">${help}</div>`;
+    case "date":case "month":return `<div class="field"><label>${esc(f.label)}</label><input type="${f.type}" data-p="${p}" value="${esc(v)}">${help}</div>`;
+    case "photo":return `<div class="field"><label>${esc(f.label)}</label><div class="photo"><div class="pv" style="width:72px;height:72px;border-radius:6px">${portrait(val||{},(C.team||[]).indexOf(val))}</div>
+      <label class="btn ghost sm" style="cursor:pointer">Upload photo<input type="file" accept="image/*" hidden data-photo="${p}"></label>${v?`<button class="mini" data-act="cutphoto" data-p="${p}">Remove background</button><button class="mini del" data-act="clearphoto" data-p="${p}">Remove photo</button>`:""}<span class="help" data-photostatus="${p}"></span></div></div>`;
+    case "links":{const me=val?.id;return `<div class="field"><label>${esc(f.label)}</label><div class="linkpick">${C.graph.filter(n=>n.id!==me).map(n=>{const on=(v||[]).includes(n.id)||(n.to||[]).includes(me);return `<label><input type="checkbox" data-link="${esc(me)}" value="${esc(n.id)}" ${on?"checked":""}>${esc(n.label)}</label>`}).join("")}</div></div>`}
+    case "people":return `<div class="field"><label>${esc(f.label)}</label><div class="linkpick">${C.team.map(m=>`<label><input type="checkbox" data-people="${p}" value="${esc(m.name)}" ${(v||[]).includes(m.name)?"checked":""}>${esc(m.name.replace(/[\[\]]/g,""))}</label>`).join("")||'<span class="help">Add people in the Team tab first.</span>'}</div><div class="help">People from the Team tab. They appear as profile cards on the project page.</div></div>`;
+    case "pick":{const opts=C[f.from]||[];return `<div class="field"><label>${esc(f.label)}</label><div class="linkpick">${opts.map(o=>`<label><input type="checkbox" data-pick="${p}" value="${esc(o.id)}" ${(v||[]).includes(o.id)?"checked":""}>${esc(String(o[f.lab||"name"]||o.id).replace(/[\[\]]/g,""))}</label>`).join("")||'<span class="help">Nothing to pick yet.</span>'}</div></div>`}
+    case "pick1":{const opts=C[f.from]||[];return `<div class="field"><label>${esc(f.label)}</label><select data-p="${p}"><option value="">None</option>${opts.map(o=>`<option value="${esc(o.id)}" ${o.id===v?"selected":""}>${esc(o.name)}</option>`).join("")}</select></div>`}
+    case "image":return `<div class="field"><label>${esc(f.label)}</label><div class="photo"><div class="pv" style="width:120px;height:90px;border-radius:6px;background:var(--soft)">${v?`<img src="${esc(v)}" alt="">`:'<span class="help">No image</span>'}</div>
+      <label class="btn ghost sm" style="cursor:pointer">${v?"Replace":"Upload"} image<input type="file" accept="image/*" hidden data-image="${p}"></label>${v?`<button class="mini del" data-act="clearphoto" data-p="${p}">Remove</button>`:""}<span class="help" data-imgstatus="${p}"></span></div>${help}</div>`;
+    case "file":{const nm=val?.fileName||"";return `<div class="field"><label>${esc(f.label)}</label><div class="photo">${v?`<a class="chip" href="${esc(v)}" target="_blank" rel="noopener">📄 ${esc(nm||"Open file")}</a>`:'<span class="help">No file</span>'}
+      <label class="btn ghost sm" style="cursor:pointer">${v?"Replace":"Upload"} PDF<input type="file" accept="application/pdf" hidden data-file="${p}"></label>${v?`<button class="mini del" data-act="clearfile" data-p="${p}">Remove</button>`:""}<span class="help" data-filestatus="${p}"></span></div>${help}</div>`}
+    case "logo":return `<div class="field"><label>${esc(f.label)}</label><div class="photo"><div class="pv" style="width:140px;height:64px;background:var(--soft);border-radius:8px;padding:8px">${v?`<img src="${esc(v)}" alt="" style="object-fit:contain">`:'<span class="help">No logo</span>'}</div>
+      <label class="btn ghost sm" style="cursor:pointer">Upload logo<input type="file" accept="image/*" hidden data-logo="${p}"></label>${v?`<button class="mini del" data-act="clearphoto" data-p="${p}">Remove</button>`:""}</div>${help}</div>`;
+    case "list":return `<div class="field"><label>${esc(f.label)}</label>${listHTML(f,[...path,f.k],v||[])}</div>`;
+    default:return `<div class="field"><label>${esc(f.label)}</label><input type="text" data-p="${p}" value="${esc(v)}" ${f.ph?`placeholder="${esc(f.ph)}"`:""}>${help}</div>`;
+  }
+}
+function listHTML(sec,path,arr){
+  const p=JSON.stringify(path).replace(/"/g,"&quot;"),canHide=sec.hide!==false;
+  const nh=arr.filter(x=>x.hidden).length;
+  return (canHide&&arr.length?`<p class="help" style="margin:-8px 0 12px">${arr.length-nh} shown on site${nh?` · ${nh} hidden`:""}</p>`:"")+arr.map((it,i)=>{const key=JSON.stringify([...path,i]);return `<details class="item ${it.hidden?"is-hidden":""}" data-key="${esc(key)}" ${openItems.has(key)?"open":""}><summary><span class="chev">›</span><span class="t">${esc(sec.title(it,i))}${it.hidden?'<small> · Hidden from site</small>':""}</span>
+    ${canHide?`<button class="vis ${it.hidden?"":"on"}" data-act="hide" data-p="${p}" data-i="${i}" title="${it.hidden?"Show on site":"Hide from site"}"><span class="sw"></span>${it.hidden?"Hidden":"Shown"}</button>`:""}
+    <button class="mini" data-act="up" data-p="${p}" data-i="${i}" ${i===0?"disabled":""} title="Move up">↑</button><button class="mini" data-act="down" data-p="${p}" data-i="${i}" ${i===arr.length-1?"disabled":""} title="Move down">↓</button><button class="mini del" data-act="del" data-p="${p}" data-i="${i}">Delete</button></summary>
+    <div class="body">${sec.fields.map(f=>fieldHTML(f,[...path,i],it)).join("")}</div></details>`}).join("")+
+    `<button class="addbtn" data-act="add" data-p="${p}">+ Add ${esc(sec.add||"item")}</button>`;
+}
+V.admin=()=>{
+  if(!isEditor)return `<section class="view"><div class="wrap"><p class="eyebrow">Site editor</p><h1 class="page">Admin</h1>
+    ${host?.signInUrl?`<p class="lede">${host.email?`You're signed in as ${esc(host.email)}, which isn't an admin account.`:"Sign in with an admin Google account to edit this site."}</p><p style="margin-top:20px"><a class="btn" href="${esc(host.email?host.signOutUrl:host.signInUrl)}">${host.email?"Sign out":"Sign in with Google"}</a></p>`
+      :`<p class="lede">Only editors of this site can make changes here. If you run this site, open it in claude.ai while signed in.</p>`}</div></section>`;
+  const sec=SECTIONS.find(s=>s.id===adminTab),grp=tabGroup(adminTab);
+  const crumb=grp?`<p class="eyebrow" style="margin-bottom:6px">${grp.name}</p>`:"";
+  const formHTML=adminTab==="overview"?overviewHTML():adminTab==="resources"?crumb+resourcesHTML():adminTab==="access"?crumb+accessHTML():!sec?overviewHTML():`${crumb}<h2 class="panel-h">${sec.name}</h2><p class="panel-d">${esc(sec.desc)}</p>
+      ${sec.list?listHTML(sec,[sec.id],C[sec.id]):fieldsGrouped(sec.fields,[sec.id],C[sec.id])}`;
+  return `
+<section class="view" style="padding-top:56px"><div class="wrap">
+  <p class="eyebrow">Site editor</p>
+  <h1 class="page" style="font-size:44px">Admin</h1>
+  <p class="lede" style="font-size:16px">Change anything on the site. Edits stay a draft on this device until you press <b>Publish to site</b>.${host?.email?` Signed in as <b>${esc(host.email)}</b>${myRole?` (${esc(myRole)})`:""}.`:""}</p>
+  <div class="toolbar"><span class="status ${draftDirty?"dirty":""}" id="status"><i></i>${draftDirty?"Draft saved on this device · not published yet":"No unpublished changes"}</span>
+    <button class="btn ghost sm" onclick="startEditing()">Edit page text</button>
+    <button class="btn ghost sm" onclick="previewDraft()">Preview</button>
+    <button class="btn ghost sm" id="discardBtn" onclick="discard()" ${draftDirty?"":"disabled"}>Discard</button>
+    <button class="btn sm" id="pubBtn" onclick="publish()" ${draftDirty&&!readOnly?"":"disabled"}>Publish to site</button>${host?.signOutUrl?`<a class="btn ghost sm" href="${esc(host.signOutUrl)}">Sign out</a>`:""}</div>
+  ${artifact?"":`<div class="note">Publishing isn't connected in this view, so changes stay in this browser.</div>`}
+  <div class="adm">
+    ${sideNav()}
+    <div id="form">${formHTML}</div>
+  </div>
+</div></section>`};
+
+/* =============== Admin: behaviour =============== */
+function markDirty(){
+  draftDirty=true;lsSet(LKEY,C);
+  const s=document.getElementById("status");if(s){s.className="status dirty";s.innerHTML="<i></i>Saving draft…"}
+  ["pubBtn","discardBtn"].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=false});
+  clearTimeout(markDirty._t);markDirty._t=setTimeout(saveDraft,900);
+  updateChrome();
+}
+function saveDraft(){lsSet(LKEY,C);setStatus("Draft saved on this device · not published yet")}
+function setStatus(m){const s=document.getElementById("status");if(s)s.innerHTML="<i></i>"+esc(m)}
+async function publish(){
+  clearTimeout(markDirty._t);lsSet(LKEY,C);
+  const b=document.getElementById("pubBtn");if(b){b.disabled=true;b.textContent="Publishing…"}
+  try{
+    if(artifact)await artifact.publish({"site-data.json":JSON.stringify(C,null,2)});
+    live=structuredClone(C);lsDel(LKEY);draftDirty=false;render();
+    toast(artifact?"Published. The site is updated for everyone.":"Saved in this preview only.");
+  }catch(e){
+    const c=e&&e.code;
+    if(c==="conflict")toast("Someone else published first. The page will reload with their version; your draft is kept.");
+    else if(["not_writer","not_granted","consent_required","not_declared"].includes(c)){readOnly=true;toast("You can't publish to this site. Ask the owner for edit access.")}
+    else if(c==="capability_disabled"||c==="capability_removed")toast("Publishing isn't available in this view. Open the site in claude.ai while it isn't shared by public link, or use the hosted version.");
+    else if(c==="rate_limited")toast("Publishing too often. Wait a minute, then publish again.");
+    else if(c==="too_large")toast("The site data is too large to publish. Shorten some posts.");
+    else toast("Publishing failed. Your draft is kept; try again in a moment.");
+    if(b){b.disabled=false;b.textContent="Publish to site"}
+  }
+}
+function discard(){C=structuredClone(live);draftDirty=false;lsDel(LKEY);render();toast("Changes discarded")}
+function previewDraft(){location.hash="home";toast("Previewing your draft. Use the key icon to return.")}
+let editing=false;
+function startEditing(){editing=true;if(location.hash==="#admin")location.hash="home";else render()}
+function stopEditing(){editing=false;render();if(draftDirty)toast("Saved as draft. Publish from Admin.")}
+function wireEditing(){
+  document.body.classList.toggle("editing",editing);
+  document.querySelectorAll("[data-k]").forEach(el=>{
+    el.contentEditable=editing?"plaintext-only":"false";
+    if(editing){el.onblur=()=>{const p=el.dataset.k.split(".").map(x=>/^\d+$/.test(x)?+x:x);const v=el.innerText.trim();if(getP(C,p)!==v){ensureDraft();setP(C,p,v);markDirty()}};
+      el.onclick=e=>e.preventDefault();}
+  });
+}
+/* ---- photos: automatic background removal (bg-worker.js), black and white ---- */
+let bgWorker=null,bgSeq=0,bgWait={},photoStatusEl=null;
+function photoStatus(m){if(photoStatusEl&&photoStatusEl.isConnected)photoStatusEl.textContent=m}
+function getWorker(){
+  if(bgWorker)return bgWorker;
+  bgWorker=new Worker("bg-worker.js");
+  bgWorker.onmessage=e=>{const m=e.data;if(m.type==="progress"){photoStatus(m.text);return}const w=bgWait[m.id];if(!w)return;delete bgWait[m.id];m.error?w.rej(new Error(m.error)):w.res(m.mask)};
+  bgWorker.onerror=e=>{Object.values(bgWait).forEach(w=>w.rej(new Error("worker failed")));bgWait={};bgWorker=null};
+  return bgWorker;
+}
+const segment=input=>new Promise((res,rej)=>{const id=++bgSeq;bgWait[id]={res,rej};try{getWorker().postMessage({id,input},[input.buffer])}catch(e){delete bgWait[id];rej(e)}});
+async function loadImg(src){const img=new Image();img.crossOrigin="anonymous";img.src=src;await img.decode();return img}
+function toBW(ctx,O,alpha){
+  const od=ctx.getImageData(0,0,O,O),d=od.data;
+  for(let p=0;p<d.length;p+=4){const g=Math.min(255,Math.max(0,(0.299*d[p]+0.587*d[p+1]+0.114*d[p+2]-128)*1.08+128));d[p]=d[p+1]=d[p+2]=g;if(alpha)d[p+3]=alpha[p+3]}
+  ctx.putImageData(od,0,0);
+}
+async function cutout(img){
+  const S=1024,W=img.naturalWidth,H=img.naturalHeight;
+  const c=document.createElement("canvas");c.width=c.height=S;const cx=c.getContext("2d");cx.drawImage(img,0,0,S,S);
+  const d=cx.getImageData(0,0,S,S).data,N=S*S,inp=new Float32Array(3*N);
+  for(let i=0,p=0;i<N;i++,p+=4){inp[i]=(d[p]-128)/256;inp[i+N]=(d[p+1]-128)/256;inp[i+2*N]=(d[p+2]-128)/256}
+  const m=await segment(inp);
+  let x0=S,y0=S,x1=-1,y1=-1;
+  for(let y=0;y<S;y++)for(let x=0;x<S;x++)if(m[y*S+x]>.5){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}
+  if(x1<0)throw new Error("No person found in the photo");
+  const bx0=x0*W/S,bx1=(x1+1)*W/S,by0=y0*H/S,by1=(y1+1)*H/S;
+  const side=Math.min(W,H,Math.max((bx1-bx0)*1.15,(by1-by0)*1.06));
+  const sx=Math.min(Math.max((bx0+bx1)/2-side/2,0),W-side),sy=Math.min(Math.max(by0-side*.07,0),H-side);
+  const O=480,o=document.createElement("canvas");o.width=o.height=O;const ox=o.getContext("2d");ox.drawImage(img,sx,sy,side,side,0,0,O,O);
+  const mc=document.createElement("canvas");mc.width=mc.height=S;const mx=mc.getContext("2d"),md=mx.createImageData(S,S);
+  for(let i=0;i<N;i++)md.data[i*4+3]=Math.round(Math.min(1,Math.max(0,m[i]))*255);
+  mx.putImageData(md,0,0);
+  const ma=document.createElement("canvas");ma.width=ma.height=O;const mac=ma.getContext("2d");mac.drawImage(mc,sx*S/W,sy*S/H,side*S/W,side*S/H,0,0,O,O);
+  toBW(ox,O,mac.getImageData(0,0,O,O).data);return o;
+}
+function plainBW(img){const O=480,W=img.naturalWidth,H=img.naturalHeight,side=Math.min(W,H),o=document.createElement("canvas");o.width=o.height=O;const ox=o.getContext("2d");ox.drawImage(img,(W-side)/2,(H-side)/3,side,side,0,0,O,O);toBW(ox,O);return o}
+async function savePhoto(canvas){
+  if(assets){const blob=await new Promise(r=>canvas.toBlob(r,"image/png"));const up=await assets.upload(new File([blob],"portrait.png",{type:"image/png"}));return up.url||("/_blob/"+up.id)}
+  return canvas.toDataURL("image/webp",.85);
+}
+async function processPhoto(src,path,statusEl){
+  photoStatusEl=statusEl;photoStatus("Preparing photo…");
+  const img=await loadImg(src);let canvas,cut=true;
+  try{canvas=await cutout(img)}catch(e){cut=false;canvas=plainBW(img)}
+  photoStatus("Saving…");
+  const url=await savePhoto(canvas);
+  ensureDraft();setP(C,path,url);markDirty();render();
+  toast(cut?"Background removed. Publish to put it live.":"Couldn't remove the background, so the photo was added in black and white.");
+}
+document.addEventListener("input",e=>{
+  const el=e.target;if(!el.dataset)return;
+  if(el.dataset.p){ensureDraft();const p=JSON.parse(el.dataset.p);let v=el.type==="checkbox"?el.checked:el.dataset.t==="num"?+el.value:el.value;if((p[0]==="projects"||p[0]==="themes"||p[0]==="posts")&&p[2]==="id")v=String(v).toLowerCase().replace(/[^a-z0-9-]+/g,"-");setP(C,p,v);markDirty();
+    const it=el.closest(".item");if(it){const key=JSON.parse(it.dataset.key),sec=findListSec(key);if(sec){const tt=it.querySelector(":scope>summary .t");if(tt)tt.textContent=sec.title(getP(C,key),key.at(-1))}}}
+  if(el.dataset.pick){ensureDraft();const p=JSON.parse(el.dataset.pick);const cur=new Set(getP(C,p)||[]);el.checked?cur.add(el.value):cur.delete(el.value);setP(C,p,[...cur]);markDirty()}
+  if(el.dataset.people){ensureDraft();const p=JSON.parse(el.dataset.people);const cur=new Set(getP(C,p)||[]);el.checked?cur.add(el.value):cur.delete(el.value);setP(C,p,[...cur]);markDirty()}
+  if(el.dataset.link!==undefined){ensureDraft();const me=el.dataset.link,other=el.value,a=C.graph.find(n=>n.id===me),b=C.graph.find(n=>n.id===other);
+    a.to=(a.to||[]).filter(x=>x!==other);b.to=(b.to||[]).filter(x=>x!==me);if(el.checked)a.to.push(other);markDirty()}
+});
+document.addEventListener("change",async e=>{
+  const el=e.target;
+  if(el.dataset?.insert&&el.files?.[0]){const key=el.dataset.insert,st=document.querySelector(`[data-insstatus="${CSS.escape(key)}"]`),ta=document.querySelector(`textarea[data-p="${CSS.escape(key)}"]`);
+    if(st)st.textContent="Uploading…";
+    try{const url=await uploadImage(el.files[0]);const pos=ta?ta.selectionStart:String(getP(C,JSON.parse(key))||"").length;
+      const cur=String(getP(C,JSON.parse(key))||""),before=cur.slice(0,pos).replace(/\s*$/,""),after=cur.slice(pos).replace(/^\s*/,"");
+      const md=`![Caption](${url})`,next=(before?before+"\n\n":"")+md+(after?"\n\n"+after:"");
+      ensureDraft();setP(C,JSON.parse(key),next);markDirty();render();
+      const t2=document.querySelector(`textarea[data-p="${CSS.escape(key)}"]`);if(t2){const at=next.indexOf(md)+2;t2.focus();t2.setSelectionRange(at,at+7)}
+      toast("Photo inserted. Replace “Caption” with your own words, or delete it.")}
+    catch(err){if(st)st.textContent="";toast(err?.code==="too_large"?"That photo is too large.":"That photo could not be uploaded.")}el.value="";return}
+  if(el.dataset?.image&&el.files?.[0]){const st=document.querySelector(`[data-imgstatus="${CSS.escape(el.dataset.image)}"]`);if(st)st.textContent="Uploading…";try{
+      const url=await uploadImage(el.files[0]);
+      ensureDraft();setP(C,JSON.parse(el.dataset.image),url);markDirty();render();toast("Image added. Publish to put it live.")}catch(err){if(st)st.textContent="";toast(err?.code==="too_large"?"That image is too large.":"That image could not be uploaded.")}return}
+  if(el.dataset?.file&&el.files?.[0]){const f=el.files[0],st=document.querySelector(`[data-filestatus="${CSS.escape(el.dataset.file)}"]`);
+    if(!assets){toast("File uploads aren't available in this view. Use a link instead.");return}
+    if(st)st.textContent="Uploading…";try{const up=await assets.upload(f);const p=JSON.parse(el.dataset.file);ensureDraft();setP(C,p,up.url||("/_blob/"+up.id));setP(C,[...p.slice(0,-1),"fileName"],f.name);markDirty();render();toast("PDF added. Publish to put it live.")}
+    catch(err){if(st)st.textContent="";toast(err?.code==="too_large"?"That PDF is too large. Use a link instead.":"That PDF could not be uploaded.")}return}
+  if(el.dataset?.logo&&el.files?.[0]){const f=el.files[0];try{let url;
+      if(assets){const up=await assets.upload(f);url=up.url||("/_blob/"+up.id)}
+      else{const img=await loadImg(URL.createObjectURL(f));const k=Math.min(1,400/img.naturalWidth),c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);c.getContext("2d").drawImage(img,0,0,c.width,c.height);url=c.toDataURL("image/png")}
+      ensureDraft();setP(C,JSON.parse(el.dataset.logo),url);markDirty();render();toast("Logo added. Publish to put it live.")}catch(err){toast("That logo could not be uploaded. Try a PNG, JPEG or SVG.")}return}
+  if(el.dataset?.photo&&el.files?.[0]){const url=URL.createObjectURL(el.files[0]);const st=document.querySelector(`[data-photostatus="${CSS.escape(el.dataset.photo)}"]`);try{await processPhoto(url,JSON.parse(el.dataset.photo),st)}catch(err){toast(err?.code==="too_large"?"That photo is too large.":"That photo could not be used. Try a JPEG or PNG.")}finally{URL.revokeObjectURL(url)}}
+  else if(el.tagName==="SELECT"||el.type==="checkbox"){/* handled by input */}
+});
+function findListSec(key){const path=key.slice(0,-1);const top=SECTIONS.find(s=>s.id===path[0]);if(!top)return null;if(path.length===1)return top.list?top:null;const f=top.fields.flatMap(x=>x.row||[x]).find(x=>x.k===path[1]);return f?.type==="list"?f:null}
+document.addEventListener("toggle",e=>{const d=e.target;if(d.classList?.contains("item")){d.open?openItems.add(d.dataset.key):openItems.delete(d.dataset.key)}},true);
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]");if(!b)return;e.preventDefault();e.stopPropagation();
+  ensureDraft();const p=JSON.parse(b.dataset.p),i=+b.dataset.i,act=b.dataset.act;
+  if(act==="clearphoto"){setP(C,p,"");markDirty();render();return}
+  if(act==="clearfile"){setP(C,p,"");setP(C,[...p.slice(0,-1),"fileName"],"");markDirty();render();return}
+  if(act==="cutphoto"){const st=b.parentElement.querySelector("[data-photostatus]");b.disabled=true;processPhoto(getP(C,p),p,st).catch(()=>{b.disabled=false;toast("That photo could not be processed.")});return}
+  const arr=getP(C,p),sec=findListSec([...p,0]);
+  if(act==="add"){const blank=typeof sec.blank==="function"?sec.blank():structuredClone(sec.blank);arr.push(blank);openItems.add(JSON.stringify([...p,arr.length-1]))}
+  if(act==="del"){const name=sec.title(arr[i],i);if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent="Confirm delete";setTimeout(()=>{if(b.isConnected){b.dataset.sure="";b.textContent="Delete"}},2500);return}
+    const [gone]=arr.splice(i,1);if(p[0]==="graph"&&gone)C.graph.forEach(n=>n.to=(n.to||[]).filter(x=>x!==gone.id));toast(`Deleted ${name}`);openItems.clear()}
+  if(act==="hide"){arr[i].hidden=!arr[i].hidden;markDirty();render();toast(arr[i].hidden?"Hidden from site (publish to apply)":"Shown on site (publish to apply)");return}
+  if(act==="up"&&i>0){[arr[i-1],arr[i]]=[arr[i],arr[i-1]];openItems.clear()}
+  if(act==="down"&&i<arr.length-1){[arr[i+1],arr[i]]=[arr[i],arr[i+1]];openItems.clear()}
+  markDirty();render();
+});
+
+/* =============== Admin: research resources (private, saved immediately) =============== */
+const RES_CATS=["Protocols","Ethics","Reading","Templates","Meeting notes","Data tools","Other"];
+let res={items:[],state:"idle",err:"",q:"",cat:"All",editing:null,confirm:null,me:null};
+async function resStart(){
+  if(res.state!=="idle")return;res.state="loading";
+  try{
+    if(!db){res.state="error";res.err=host?"Research resources are switched off because the site's GitHub repository isn't private.":"Private storage isn't available in this view. Open the site in claude.ai while signed in.";return}
+    try{if(user?.id)res.me=await user.id()}catch(e){}
+    db.collection("resources").orderBy("createdAt","desc").onSnapshot(snap=>{res.items=snap.docs.map(d=>Object.assign({id:d.id},d.data()));res.state="ready";if(inAdmin&&adminTab==="resources")render()},
+      e=>{res.state="error";res.err="Resources could not be loaded. Refresh to try again.";if(inAdmin&&adminTab==="resources")render()});
+  }catch(e){res.state="error";res.err="Resources could not be loaded. Refresh to try again."}
+}
+const fmtSize=n=>!n?"":n<1048576?Math.max(1,Math.round(n/1024))+" KB":(n/1048576).toFixed(1)+" MB";
+const safeUrl=u=>/^(https?:\/\/|\/_blob\/|\/)/.test(String(u||""))?u:"";
+function resourcesHTML(){
+  resStart();
+  let h=`<h2 class="panel-h">Research resources</h2><div class="note" style="margin-top:6px"><b>Private to site editors.</b> Resources save as soon as you add them and never appear on the public site. Don't upload participant data or anything that identifies a person.</div>`;
+  if(res.state==="loading"||res.state==="idle")return h+`<p class="empty">Loading resources…</p>`;
+  if(res.state==="error")return h+`<p class="empty">${esc(res.err)}</p>`;
+  const x=res.editing;
+  if(x){const isNew=!x.id,kind={file:"file",link:"link",note:"note"}[x.kind];
+    return h+`<form class="card" id="resform" style="margin-top:16px" onsubmit="resSave(event)"><h3 style="margin-bottom:14px">${isNew?"Add":"Edit"} ${kind}</h3>
+      ${x.kind==="file"&&isNew?`<div class="field"><label>File</label><input type="file" id="r-file" required><div class="help">${db.upload?"Any file type, including Word and Excel, up to 4 MB.":"PDF, image, video, CSV, Markdown, JSON or plain text, up to 20 MB. For Word or Excel files, add a link instead."}</div></div>`:""}
+      ${x.kind==="file"&&!isNew?`<p class="help">File: <b>${esc(x.fileName)}</b></p>`:""}
+      <div class="field"><label>Title</label><input type="text" id="r-title" value="${esc(x.title)}" ${x.kind==="link"?"required":""}><div class="help">${x.kind==="file"?"Leave blank to use the file name":x.kind==="note"?"Leave blank to use the first line":""}</div></div>
+      ${x.kind==="link"?`<div class="field"><label>Link</label><input type="url" id="r-url" required placeholder="https://drive.google.com/…" value="${esc(x.url)}"><div class="help">A shared folder, Google Doc, OneDrive file, Zotero group, OSF page and so on</div></div>`:""}
+      <div class="row2"><div class="field"><label>Category</label><select id="r-cat">${RES_CATS.map(c=>`<option ${c===(x.category||"Other")?"selected":""}>${c}</option>`).join("")}</select></div>
+      <div class="field"><label>Tags</label><input type="text" id="r-tags" value="${esc((x.tags||[]).join(", "))}"><div class="help">Comma separated, e.g. study-1, screening</div></div></div>
+      <div class="field"><label>${x.kind==="note"?"Note":"Notes"}</label><textarea id="r-notes" class="${x.kind==="note"?"long":""}">${esc(x.notes)}</textarea></div>
+      <p class="help" id="r-status"></p>
+      <div style="display:flex;gap:8px"><button class="btn sm" id="r-save">${isNew?"Add "+kind:"Save changes"}</button><button type="button" class="btn ghost sm" onclick="res.editing=null;render()">Cancel</button></div></form>`}
+  const shown=res.items.filter(i=>(res.cat==="All"||i.category===res.cat)&&(!res.q||[i.title,i.notes,i.fileName,i.category,(i.tags||[]).join(" ")].join(" ").toLowerCase().includes(res.q)));
+  h+=`<div style="display:flex;gap:8px;margin:18px 0;flex-wrap:wrap"><button class="btn sm" onclick="res.editing={kind:'file'};render()">Upload file</button><button class="btn ghost sm" onclick="res.editing={kind:'link'};render()">Add link</button><button class="btn ghost sm" onclick="res.editing={kind:'note'};render()">Add note</button></div>`;
+  if(res.items.length)h+=`<div class="field"><input type="text" id="res-q" placeholder="Search resources" value="${esc(res.q)}"></div><div class="chips" style="margin-bottom:16px">${["All",...RES_CATS].map(c=>{const n=c==="All"?res.items.length:res.items.filter(i=>i.category===c).length;return c!=="All"&&!n?"":`<button class="chip ${res.cat===c?"dark":""}" onclick="res.cat='${c}';render()">${c} ${n}</button>`}).join("")}</div>`;
+  if(!res.items.length)return h+`<p class="empty">No resources yet. Upload a protocol, ethics form or reading list, or add a link to a shared folder.</p>`;
+  if(!shown.length)return h+`<p class="empty">Nothing matches.</p>`;
+  return h+shown.map(i=>{const u=safeUrl(i.url);const meta=[i.category,i.kind==="file"?(i.fileName||"")+(i.size?" · "+fmtSize(i.size):""):i.kind==="link"?String(i.url||"").replace(/^https?:\/\//,"").split("/")[0]:"Note",i.createdAt?new Date(i.createdAt).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}):""].filter(Boolean).join(" · ");
+    return `<div class="item" style="padding:14px 16px;display:flex;gap:14px;align-items:flex-start"><div style="flex:1;min-width:0"><b>${esc(i.title||i.fileName||"Untitled")}</b><div class="help">${esc(meta)}</div>${i.notes?`<p style="margin:6px 0 0;font-size:14px;color:var(--muted)">${esc(i.kind==="note"?i.notes:String(i.notes).split("\n")[0])}</p>`:""}${(i.tags||[]).length?`<div class="tags" style="margin-top:6px">${i.tags.map(t=>`<span class="tag">#${esc(t)}</span>`).join("")}</div>`:""}</div>
+      <div style="display:flex;gap:6px;flex-shrink:0">${res.confirm===i.id?`<span class="help" style="align-self:center">Delete this?</span><button class="mini del" onclick="resDelete('${i.id}')">Delete</button><button class="mini" onclick="res.confirm=null;render()">Keep</button>`
+      :`${u&&i.kind!=="note"?`<a class="mini" href="${esc(u)}" target="_blank" rel="noopener" style="text-decoration:none">Open</a>`:""}<button class="mini" onclick="resEdit('${i.id}')">Edit</button><button class="mini del" onclick="res.confirm='${i.id}';render()">Delete</button>`}</div></div>`}).join("");
+}
+function resEdit(id){res.editing=Object.assign({},res.items.find(i=>i.id===id));render()}
+document.addEventListener("input",e=>{if(e.target.id==="res-q"){res.q=e.target.value.trim().toLowerCase();const pos=e.target.selectionStart;render();const n=document.getElementById("res-q");if(n){n.focus();n.setSelectionRange(pos,pos)}}});
+async function resSave(e){
+  e.preventDefault();const x=res.editing,isNew=!x.id,$=id=>document.getElementById(id),st=$("r-status"),save=$("r-save");
+  const body={title:$("r-title").value.trim(),category:$("r-cat").value,tags:tagList($("r-tags").value),notes:$("r-notes").value,kind:x.kind,updatedAt:Date.now()};
+  if(x.kind==="link")body.url=$("r-url").value.trim();
+  if(x.kind==="note"&&!body.title)body.title=String(body.notes).split("\n")[0].slice(0,80)||"Note";
+  save.disabled=true;
+  try{
+    if(x.kind==="file"&&isNew){
+      const file=$("r-file").files[0];if(!file){save.disabled=false;return}
+      const own=!!db.upload,max=own?4*1048576:20*1048576;
+      if(file.size>max){st.textContent=`That file is over ${own?4:20} MB. Add a link to it instead.`;save.disabled=false;return}
+      st.textContent="Uploading…";
+      let up;if(own)up=await db.upload(file);else{if(!assets){st.textContent="File uploads aren't available in this view.";save.disabled=false;return}up=await assets.upload(file)}
+      Object.assign(body,{url:up.url||("/_blob/"+up.id),assetId:up.id||up.path||"",fileName:file.name,size:up.sizeBytes||file.size,contentType:up.contentType||file.type});
+      if(!body.title)body.title=file.name.replace(/\.[^.]+$/,"");
+    }
+    if(isNew){body.createdAt=Date.now();if(res.me)body.addedBy=res.me;await db.collection("resources").add(body)}
+    else await db.doc("resources/"+x.id).update(body);
+    res.editing=null;render();toast(isNew?"Added to resources":"Saved");
+  }catch(err){const c=err&&err.code;save.disabled=false;
+    st.textContent=["unsupported_type","invalid_content","invalid_argument"].includes(c)?"This file type can't be uploaded. Save it as PDF, or add a link instead.":c==="too_large"?"That file is too large. Add a link to it instead.":c==="quota_exceeded"?"Storage is full. Delete old files, or add a link instead.":"Saving failed. Try again in a moment."}
+}
+async function resDelete(id){
+  const x=res.items.find(i=>i.id===id);
+  try{if(x?.kind==="file"&&x.assetId){try{if(db.deleteFile)await db.deleteFile(x.assetId);else if(assets)await assets.delete(x.assetId)}catch(e){}}
+    await db.doc("resources/"+id).delete();res.confirm=null;toast("Deleted")}
+  catch(e){res.confirm=null;render();toast("Delete failed. Try again in a moment.")}
+}
+
+/* =============== Admin: access (who can edit) =============== */
+let accessApi=null,myRole="",acc={state:"idle",people:[],owners:[],err:""};
+async function accStart(){
+  if(acc.state!=="idle"||!accessApi)return;acc.state="loading";
+  try{const j=await accessApi.list();acc.people=j.people||[];acc.owners=j.owners||[];acc.state="ready"}catch(e){acc.state="error";acc.err="Access settings could not be loaded."}
+  if(adminTab==="access")render();
+}
+function accessHTML(){
+  const roles=`<div class="gi-two" style="margin-top:8px"><div><h3 style="font-size:16px">Admin</h3><p class="help" style="font-size:14px">Edits and publishes everything, sees research resources, and can add or remove people here.</p></div><div><h3 style="font-size:16px">Editor</h3><p class="help" style="font-size:14px">Edits and publishes the site and uses research resources, but can't change who has access.</p></div></div>`;
+  let h=`<h2 class="panel-h">Access</h2><p class="panel-d">Who can sign in to this console. People sign in with their Google account.</p>${roles}`;
+  if(!host){
+    return h+`<div class="note" style="margin-top:20px"><b>This copy runs on claude.ai.</b> Access here follows the artifact's <b>Share</b> menu: people you share with as <b>Editor</b> can open this console and publish; <b>Viewers</b> only see the site. On the hosted site (Vercel), you manage Admins and Editors right on this tab.</div>`;
+  }
+  if(!accessApi)return h+`<div class="note" style="margin-top:20px">Only Admins can change access. You're signed in as ${esc(myRole||"an editor")}.</div>`;
+  accStart();
+  if(acc.state==="loading"||acc.state==="idle")return h+`<p class="empty">Loading…</p>`;
+  if(acc.state==="error")return h+`<p class="empty">${esc(acc.err)}</p>`;
+  return h+`<h3 style="margin:28px 0 6px;font-size:17px">People with access</h3>
+    ${acc.owners.map(e=>`<div class="acc-row"><span>${esc(e)}</span><span class="role-tag">Owner</span><span class="help" style="white-space:nowrap">set in Vercel</span></div>`).join("")}
+    ${acc.people.map(p=>`<div class="acc-row"><span>${esc(p.email)}</span><select onchange="accSet('${esc(p.email)}',this.value)"><option value="admin" ${p.role==="admin"?"selected":""}>Admin</option><option value="editor" ${p.role==="editor"?"selected":""}>Editor</option></select><button class="mini del" onclick="accRemove('${esc(p.email)}',this)">Remove</button></div>`).join("")}
+    <form class="acc-add" onsubmit="accAdd(event)"><input type="email" id="acc-email" placeholder="name@gmail.com" required><select id="acc-role"><option value="editor">Editor</option><option value="admin">Admin</option></select><button class="btn sm">Add person</button></form>
+    <p class="help" style="margin-top:12px">Changes apply straight away, no publishing needed. Owners come from the ADMIN_EMAILS setting in Vercel and can't be removed here.</p>`;
+}
+async function accSave(fn,msg){try{const j=await fn();acc.people=j.people||acc.people;render();toast(msg)}catch(e){toast(e?.code==="not_writer"?"Only Admins can change access.":"That didn't save. Try again.")}}
+function accAdd(e){e.preventDefault();const email=document.getElementById("acc-email").value.trim().toLowerCase(),role=document.getElementById("acc-role").value;if(!email)return;accSave(()=>accessApi.set(email,role),`Added ${email} as ${role}`)}
+function accSet(email,role){accSave(()=>accessApi.set(email,role),`${email} is now ${role==="admin"?"an Admin":"an Editor"}`)}
+function accRemove(email,b){if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent="Confirm";setTimeout(()=>{if(b.isConnected){b.dataset.sure="";b.textContent="Remove"}},2500);return}accSave(()=>accessApi.remove(email),`Removed ${email}`)}
+
+/* =============== Router & chrome =============== */
+const PAGES=["why","research","publications","blog","about","impact","involved"];
+const PAGE_HASH={why:"why",research:"research",publications:"publications",blog:"blog",about:"about",impact:"impact",involved:"get-involved"};
+const pageOff=v=>{const k=Object.keys(PAGE_HASH).find(x=>PAGE_HASH[x]===v);return k&&(C.nav||DEFAULT.nav)[k]?.show===false};
+function updateChrome(){
+  const p=document.getElementById("pill");p.style.display=C.recruit.open&&C.recruit.pill?"flex":"none";p.querySelector("span").textContent=C.recruit.pill;
+  document.getElementById("foot1").innerHTML=`${esc(C.site.title)} · A research program at ${t(C.site.institution)}`;
+  document.getElementById("foot2").innerHTML=t(C.site.footer);
+  document.getElementById("brandname").textContent=C.site.title;
+  document.getElementById("adminlink").style.display=isEditor||host?.signInUrl?"":"none";
+  const N=C.nav||DEFAULT.nav,items=PAGES.filter(k=>N[k]?.show!==false);
+  document.getElementById("navlinks").innerHTML=items.filter(k=>k!=="why"&&k!=="involved").map(k=>`<a href="#${PAGE_HASH[k]}">${esc(N[k].label)}</a>`).join("")+(N.involved?.show!==false?`<a href="#get-involved" class="btn">${esc(N.involved.label)}</a>`:"");
+  document.getElementById("footlinks").innerHTML=items.map(k=>`<a href="#${PAGE_HASH[k]}">${esc(N[k].label)}</a>`).join("");
+  document.title=C.site.title;
+}
+function render(){
+  let h=(location.hash||"#home").slice(1);if(h==="studies")h="research";
+  if(!(isEditor&&draftDirty))C=live;
+  const isPost=!V[h]&&SH(C.posts).some(p=>postId(p)===h),isTheme=!V[h]&&!isPost&&SH(C.themes).some(x=>x.id===h),isProj=!V[h]&&!isTheme&&SH(C.projects).some(p=>p.id===h);let v=isPost?"blog":isTheme||isProj?"research":(V[h]?h:"home");if(pageOff(v)&&!isEditor)v="home";inAdmin=v==="admin";
+  document.getElementById("app").innerHTML=isPost?V.post(h):isTheme?V.theme(h):isProj?V.project(h):V[v]();
+  if(v==="research"&&!isTheme&&!isProj)wireBrowse();
+  document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("on",a.getAttribute("href")==="#"+v&&!a.classList.contains("btn")));
+  document.querySelector("nav").classList.remove("open");
+  if(v==="home")initBatik();else bkClear();
+  if(v==="publications"){const q=document.getElementById("pubq");if(q)q.oninput=()=>{pub.q=q.value;render();const n=document.getElementById("pubq");n.focus();n.setSelectionRange(n.value.length,n.value.length)}}
+  wireEditing();updateChrome();
+}
+// make edits target a draft copy rather than live
+function ensureDraft(){if(C===live)C=structuredClone(live)}
+
+window.addEventListener("hashchange",()=>{render();window.scrollTo(0,0)});
+window.addEventListener("keydown",e=>{if(e.key==="Escape"){closePerson();if(editing)stopEditing()}});
+document.getElementById("logo").innerHTML=FLOWER(24);
+document.getElementById("orn").innerHTML=FLOWER(18);
+
+/* =============== Boot =============== */
+render();
+// content: site-data.json (written by Publish), falling back to the defaults above
+fetch("site-data.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(d=>{if(d&&d.site){live=merge(DEFAULT,migrate(d));if(!draftDirty)render()}}).catch(()=>{});
+(async()=>{
+  const use=window.claude?.use;host=window.claude?.host||null;
+  const restore=()=>{const d=lsGet(LKEY);if(d&&d.site){C=merge(DEFAULT,migrate(d));draftDirty=true;toast("Restored your unpublished draft")}};
+  if(!use){isEditor=true;restore();render();return}  // plain local preview
+  try{user=await use("user");isEditor=!!(user&&(await user.canEdit?.()||await user.isOwner?.()))}catch(e){isEditor=false}
+  if(isEditor){
+    try{artifact=await use("artifact")}catch(e){}
+    try{assets=await use("assets")}catch(e){}
+    try{db=await use("db")}catch(e){}
+    try{accessApi=await use("access")}catch(e){}
+    try{myRole=host?((await (await fetch("/api/me",{cache:"no-store"})).json()).role||""):""}catch(e){}
+    restore();
+  }
+  render();
+})();

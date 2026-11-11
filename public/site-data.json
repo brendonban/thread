@@ -1,0 +1,380 @@
+{
+  "site": {
+    "title": "THREAD",
+    "acronym": "[What THREAD stands for]",
+    "institution": "[Institution]",
+    "department": "[Department]",
+    "question": "How do culture, faith, family and stigma shape the way people in Malaysia test for, talk about and live with HIV?",
+    "lensLine": "We look through a Malaysian lens: batik.",
+    "lens": "Batik is made line by line. Wax drawn with a canting protects parts of the cloth from the dye and lets others take colour. We use that process to see what protects people, what marks them, and what is revealed once the wax comes off.",
+    "whyHiv": "[Why this matters in Malaysia: who is affected, what gets in the way of testing and treatment, with sources.]",
+    "whyLens": "[Why a cultural frame adds something that clinical models miss.]",
+    "involvedIntro": "Want to get involved in THREAD? Great. We are building a small team of research assistants and collaborators across our projects. [**Paid or voluntary?** Say so here.] This page explains what is open right now and what each role involves.",
+    "contact": "[contact email]",
+    "footer": "HIV, culture and care in Malaysia, seen through batik",
+    "researchIntro": "Our projects look at how culture, faith, family and stigma shape HIV testing, disclosure and care in Malaysia.",
+    "partnersTitle": "Our collaborators",
+    "blogIntro": "Short posts on what we are doing, why, and what we are learning along the way.",
+    "involvedReflect": "Before you apply, ask yourself what you want from the experience. For some people it is a step toward a Master's or PhD; for others it is a way to find out whether research on HIV and sexual health suits them at all. It helps to come with a clear idea of why this project, and why now.",
+    "applyCallout": "If after reading this **entire page** you'd like to be considered, email us with the role in the subject line. Applications are open on a rolling basis.",
+    "learnTitle": "Learn more about HIV in Malaysia",
+    "learn": "HIV and AIDS fact sheet | https://www.who.int/news-room/fact-sheets/detail/hiv-aids | World Health Organization\nMalaysia country page | https://open.unaids.org/countries/malaysia | UNAIDS\nMalaysia country snapshots | https://www.aidsdatahub.org/country-snapshot/malaysia | HIV and AIDS Data Hub for Asia-Pacific\nMalaysian AIDS Council | https://www.mac.org.my/v3/who-are-we/mac/ | MAC",
+    "alumniTitle": "Alumni",
+    "collabTitle": "Collaborators",
+    "collabNote": "",
+    "whyTitle": "Read it line by line",
+    "researchTitle": "Our research",
+    "themesTitle": "Research themes",
+    "browseTitle": "Browse or search our projects by research theme or project name.",
+    "pubsTitle": "Publications",
+    "pubsIntro": "Papers, protocols and talks from the program, including work in preparation and planned outputs.",
+    "blogTitle": "Blog",
+    "aboutTitle": "Research team",
+    "aboutIntro": "The people behind THREAD, a research program at [Institution].",
+    "involvedTitle": "Getting involved",
+    "involvedSummaryTitle": "Bottom line: what opportunities currently exist?",
+    "involvedSummaryNote": "The summary as of today. Read below for the details.",
+    "impactTitle": "Our impact",
+    "impactIntro": "What THREAD has made possible so far: the people we have worked with, the reports we have shared and the moments along the way.",
+    "statsTitle": "In numbers",
+    "reportsTitle": "Impact reports",
+    "galleryTitle": "Moments"
+  },
+  "recruit": {
+    "open": true,
+    "deadline": "Rolling, no deadline",
+    "pill": "Join as RA or collaborator",
+    "closed": "We are not taking applications right now. Thank you for your interest."
+  },
+  "stages": [
+    {
+      "mal": "Pola",
+      "en": "Pattern",
+      "text": "Every cloth begins as a pattern. Culture, faith and family draw the lines people live within. We start by mapping them."
+    },
+    {
+      "mal": "Canting",
+      "en": "Wax",
+      "text": "Wax protects whatever it touches. We look for what shields people from HIV stigma: care, trust and community."
+    },
+    {
+      "mal": "Celup",
+      "en": "Dye",
+      "text": "Dye soaks into whatever is left open. Stigma settles the same way, quietly. We study where it lands."
+    },
+    {
+      "mal": "Lorod",
+      "en": "Boil",
+      "text": "Boiling lifts the wax away. We test what removes the barriers to testing, treatment and disclosure."
+    },
+    {
+      "mal": "Kain",
+      "en": "Cloth",
+      "text": "The finished cloth goes back to the community. At its centre, a red ribbon."
+    }
+  ],
+  "team": [
+    {
+      "name": "[Supervisor name]",
+      "group": "Supervisors",
+      "color": "Auto",
+      "role": "Supervisor",
+      "aff": "[Department]",
+      "bio": "[What the supervisor oversees on the program.]",
+      "email": "",
+      "web": "",
+      "linkedin": "",
+      "photo": ""
+    },
+    {
+      "name": "Brendon Ban",
+      "group": "Research team",
+      "color": "Auto",
+      "role": "[Role]",
+      "aff": "[Programme, Department]",
+      "bio": "[Short bio: background, and what you lead on THREAD.]",
+      "email": "",
+      "web": "https://brendonban.io",
+      "linkedin": "",
+      "photo": "img/brendon.png"
+    }
+  ],
+  "pubs": [
+    {
+      "year": "2026",
+      "type": "Protocol",
+      "status": "Published",
+      "title": "vvv",
+      "authors": "",
+      "venue": "",
+      "doi": "",
+      "link": "",
+      "tags": "",
+      "themes": [],
+      "projects": [],
+      "selected": false
+    }
+  ],
+  "posts": [
+    {
+      "title": "Why batik?",
+      "date": "2026-11-11",
+      "author": "Brendon Ban",
+      "dek": "Why a Malaysian textile is the lens for a study about HIV.",
+      "tags": "batik, culture, program",
+      "body": "[Draft post. Replace with your own words.]\n\nBatik is made slowly. A line of hot wax drawn with a canting decides which parts of the cloth take the dye and which stay clear. Nothing is revealed until the wax is boiled away.\n\nHIV in Malaysia is shaped the same way, by what families, faith, communities and services protect and by what they mark. THREAD follows those lines one at a time.\n\n## Five steps, five questions\n\n- **Pola:** what patterns of culture and faith frame HIV?\n- **Canting:** what protects people from stigma?\n- **Celup:** where does stigma soak in?\n- **Lorod:** what removes the barriers to care?\n- **Kain:** what do we give back to the community?\n\n> Nothing is revealed until the wax comes off.",
+      "id": "why-batik"
+    }
+  ],
+  "opps": [
+    {
+      "title": "Research Assistant",
+      "eyebrow": "All studies · Research assistant",
+      "open": true,
+      "wide": false,
+      "detail": true,
+      "summary": "We are **open** to research assistants across our projects. [Hours and dates.] **Rolling applications, no deadline.**",
+      "lede": "Work alongside the research team on studies about HIV, culture and care in Malaysia. Hands-on research experience for students and recent graduates.",
+      "org": "[Institution]",
+      "dept": "[Department]",
+      "location": "[Remote, or on-site at …]",
+      "timeline": "Rolling, no deadline",
+      "commitment": "[Hours a week]",
+      "pay": "[Paid or voluntary]",
+      "l1t": "What you'll do",
+      "l1": "Search for and screen research articles\nHelp prepare study materials and surveys\nSupport data collection, transcription and coding of interviews\nHelp with community engagement and outreach\nAttend a weekly team meeting",
+      "l2t": "What you'll gain",
+      "l2": "Training in qualitative and quantitative research methods\nExperience in HIV and sexual health research\nYour contribution named in publications, with co-authorship if you meet authorship criteria\nA letter confirming your role and hours on completion",
+      "l3t": "Required",
+      "l3": "Enrolled in or recently graduated from psychology, counselling, public health, social science or a related field\nComfortable reading academic papers in English\nRespectful and non-judgemental when talking about HIV, sex and drug use\nCareful with confidential information\nAble to work independently and meet weekly targets",
+      "l4t": "Preferred",
+      "l4": "Prior research experience\nFamiliarity with NVivo, SPSS, R or Excel\nExperience with LGBTQ+ communities or people living with HIV\nSpeaks Bahasa Malaysia, Mandarin or Tamil",
+      "applyTitle": "How to apply",
+      "apply": "Attach your **resume or CV** and your **most recent academic transcript**. In the email body, tell us briefly why you are interested, what relevant experience or skills you have, and what you hope to gain.",
+      "subject": "THREAD Research Assistant Application–[Your Name]"
+    },
+    {
+      "title": "Collaborators",
+      "eyebrow": "Partnerships · Collaboration",
+      "open": true,
+      "wide": false,
+      "detail": true,
+      "summary": "We are **open to collaboration** with researchers, clinicians, community organisations and artists working on HIV, culture or batik in Malaysia. Get in touch any time.",
+      "lede": "THREAD is built with others. If your work touches HIV, sexual health, culture or community in Malaysia, we would like to hear from you.",
+      "org": "",
+      "dept": "",
+      "location": "",
+      "timeline": "",
+      "commitment": "",
+      "pay": "",
+      "l1t": "Who we work with",
+      "l1": "Researchers and academics\nClinicians, counsellors and health services\nCommunity organisations and peer networks\nArtists and batik makers",
+      "l2t": "Ways to collaborate",
+      "l2": "Co-designing or co-leading a project\nHelping us reach and recruit communities\nSharing expertise, data or training\nCo-authoring papers and reports",
+      "l3t": "",
+      "l3": "",
+      "l4t": "",
+      "l4": "",
+      "applyTitle": "How to get in touch",
+      "apply": "Email us a few lines about you or your organisation and the kind of collaboration you have in mind.",
+      "subject": "THREAD Collaboration–[Your Name / Organisation]"
+    }
+  ],
+  "projects": [
+    {
+      "id": "project-1",
+      "title": "[Project 1 title]",
+      "status": "Planned",
+      "start": "2027-01",
+      "end": "2027-06",
+      "published": "2026-11-11",
+      "summary": "[One or two sentences for the project card.]",
+      "body": "[Opening paragraph: the problem this project looks at, and why it matters for people living with HIV in Malaysia.]\n\n[Second paragraph: the approach, who takes part, and what the project aims to find out.]",
+      "funding": "[Funding agency]",
+      "collaborators": "[Collaborators]",
+      "publications": "",
+      "people": [
+        "Brendon Ban"
+      ],
+      "featured": true,
+      "theme": "plhiv"
+    },
+    {
+      "id": "project-2",
+      "title": "[Project 2 title]",
+      "status": "Planned",
+      "start": "2027-05",
+      "end": "2028-05",
+      "published": "2026-11-11",
+      "summary": "[One or two sentences for the project card.]",
+      "body": "[Project description.]",
+      "funding": "",
+      "collaborators": "",
+      "publications": "",
+      "people": [
+        "Brendon Ban"
+      ],
+      "featured": true,
+      "theme": "prep"
+    },
+    {
+      "id": "project-3",
+      "title": "[Project 3 title]",
+      "status": "Planned",
+      "start": "2028-07",
+      "end": "2029-08",
+      "published": "2026-11-11",
+      "summary": "[One or two sentences for the project card.]",
+      "body": "[Project description.]",
+      "funding": "",
+      "collaborators": "",
+      "publications": "",
+      "people": [
+        "Brendon Ban"
+      ],
+      "featured": true,
+      "theme": "ageing"
+    }
+  ],
+  "themes": [
+    {
+      "id": "plhiv",
+      "name": "People living with HIV",
+      "short": "Everyday life, wellbeing and care for people living with HIV in Malaysia.",
+      "body": "We work alongside people living with HIV (PLHIV) to understand what helps them live well: disclosure, family and faith, stigma in health care and at work, mental health, and staying connected to care.\n\n[Add what your team is focusing on in this theme.]"
+    },
+    {
+      "id": "ageing",
+      "name": "Ageing with HIV",
+      "short": "Growing older with HIV, and the care and support that ageing brings.",
+      "body": "More people with HIV are growing older thanks to effective treatment. We look at what ageing with HIV means in Malaysia: other health conditions, care needs, loneliness and support, and how services can keep up.\n\n[Add what your team is focusing on in this theme.]"
+    },
+    {
+      "id": "chemsex",
+      "name": "Chemsex",
+      "short": "Sexualised drug use: experiences, harms, pleasure and support.",
+      "body": "Chemsex is the use of drugs to enhance or prolong sex. We explore people's experiences of it, the risks for HIV, other infections and mental health, and what kinds of support people find acceptable.\n\n[Add what your team is focusing on in this theme.]"
+    },
+    {
+      "id": "sexual-risk",
+      "name": "Sexual risk behaviour",
+      "short": "Sexual practices, testing and the choices people make about prevention.",
+      "body": "We study how people think about sexual risk, testing and prevention, and how culture, relationships and stigma shape those choices.\n\n[Add what your team is focusing on in this theme.]"
+    },
+    {
+      "id": "prep",
+      "name": "PrEP",
+      "short": "Pre-exposure prophylaxis: awareness, access, uptake and staying on it.",
+      "body": "PrEP is medicine taken before possible exposure to prevent HIV. We look at who knows about it, who can get it, what makes people start or stop, and how stigma affects its use.\n\n[Add what your team is focusing on in this theme.]"
+    },
+    {
+      "id": "doxy-pep",
+      "name": "Doxy-PEP",
+      "short": "Doxycycline after sex to prevent some bacterial STIs: views and use.",
+      "body": "Doxy-PEP is the antibiotic doxycycline taken after sex to lower the chance of some bacterial sexually transmitted infections. We explore how acceptable it is, how people would use it, and concerns about resistance.\n\n[Add what your team is focusing on in this theme.]"
+    },
+    {
+      "id": "pep",
+      "name": "PEP",
+      "short": "Post-exposure prophylaxis: knowing about it and getting it in time.",
+      "body": "PEP is a short course of HIV medicine started soon after a possible exposure, ideally within 72 hours. We look at awareness, the barriers to getting it quickly, and the experiences of people who seek it.\n\n[Add what your team is focusing on in this theme.]"
+    }
+  ],
+  "partners": [
+    {
+      "name": "[Collaborator 1]",
+      "url": "",
+      "logo": ""
+    },
+    {
+      "name": "[Collaborator 2]",
+      "url": "",
+      "logo": ""
+    },
+    {
+      "name": "[Collaborator 3]",
+      "url": "",
+      "logo": ""
+    },
+    {
+      "name": "[Collaborator 4]",
+      "url": "",
+      "logo": ""
+    },
+    {
+      "name": "[Collaborator 5]",
+      "url": "",
+      "logo": ""
+    }
+  ],
+  "alumni": [
+    {
+      "name": "[Name]",
+      "url": "",
+      "desc": "[Role, what they worked on (years)], now [current position]"
+    }
+  ],
+  "collabPeople": [
+    {
+      "name": "[Name]",
+      "url": "",
+      "desc": "[Title, organisation]"
+    }
+  ],
+  "nav": {
+    "why": {
+      "label": "Why batik",
+      "show": true
+    },
+    "research": {
+      "label": "Our research",
+      "show": true
+    },
+    "publications": {
+      "label": "Publications",
+      "show": true
+    },
+    "blog": {
+      "label": "Blog",
+      "show": true
+    },
+    "about": {
+      "label": "About",
+      "show": true
+    },
+    "involved": {
+      "label": "Get involved",
+      "show": true
+    },
+    "impact": {
+      "label": "Impact",
+      "show": true
+    }
+  },
+  "stats": [
+    {
+      "value": "[0]",
+      "label": "[People reached]"
+    },
+    {
+      "value": "[0]",
+      "label": "[Community partners]"
+    },
+    {
+      "value": "[0]",
+      "label": "[Workshops and talks]"
+    }
+  ],
+  "reports": [
+    {
+      "title": "[Impact report title]",
+      "year": "2026",
+      "summary": "[One or two sentences on what the report covers.]",
+      "cover": "",
+      "file": "",
+      "fileName": "",
+      "link": ""
+    }
+  ],
+  "gallery": []
+}

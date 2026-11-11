@@ -1,5 +1,5 @@
 import { adminEmail, deny } from "@/lib/admin";
-import { putFile, siteRepo } from "@/lib/github";
+import { putFile, siteRepo, explainGitHub } from "@/lib/github";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   try {
     await putFile(siteRepo(), path, Buffer.from(await file.arrayBuffer()).toString("base64"), `Upload ${safe} (admin: ${email})`);
     return Response.json({ url: "/" + path.replace(/^public\//, ""), id: path, sizeBytes: file.size, contentType: file.type });
-  } catch {
-    return Response.json({ error: "Could not save to GitHub." }, { status: 502 });
+  } catch (e) {
+    return Response.json({ error: explainGitHub(e) }, { status: 502 });
   }
 }

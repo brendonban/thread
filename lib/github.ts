@@ -89,3 +89,15 @@ export async function deleteFile(repo: string, filePath: string, message: string
   });
   if (!res.ok && res.status !== 404) throw new GitHubError(res.status, `GitHub delete failed (${res.status})`);
 }
+
+/** A plain-language reason for a failed GitHub call, for the admin console. */
+export function explainGitHub(e: unknown): string {
+  if (!process.env.GITHUB_TOKEN) return "GITHUB_TOKEN isn't set in Vercel. Add it under Settings → Environment Variables, then redeploy.";
+  if (!process.env.GITHUB_REPO) return "GITHUB_REPO isn't set in Vercel. Set it to owner/name (e.g. brendonban/thread), then redeploy.";
+  const st = e instanceof GitHubError ? e.status : 0;
+  if (st === 401) return "GitHub rejected the token. It may have expired or been copied wrongly. Create a new one and update GITHUB_TOKEN in Vercel.";
+  if (st === 403) return `The GitHub token can't write to ${process.env.GITHUB_REPO}. Give it Repository access to that repo and Contents: Read and write.`;
+  if (st === 404) return `GitHub can't find ${process.env.GITHUB_REPO} (or branch ${process.env.GITHUB_BRANCH || "main"}). Check GITHUB_REPO and GITHUB_BRANCH, and that the token has access to the repo.`;
+  if (st === 409) return "Someone else saved at the same moment. Try again.";
+  return "GitHub didn't accept the change (" + (st || "network error") + "). Try again in a minute.";
+}

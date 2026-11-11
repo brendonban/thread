@@ -459,6 +459,8 @@ body.editing [data-k]{outline:1.5px dashed var(--red);outline-offset:3px;border-
 body.editing .editbar{display:flex}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;transition:.3s;z-index:40;pointer-events:none}
 .toast.show{opacity:1}
+.errbox{border:1.5px solid var(--red);background:var(--rose);color:var(--ink);border-radius:12px;padding:12px 16px;font-size:14.5px;margin:12px 0}
+.errbox .mini{margin-left:8px}
 .note{background:var(--soft);border-radius:12px;padding:14px 16px;font-size:14px;color:var(--muted);margin:16px 0}
 </style>
 </head>
@@ -1288,6 +1290,7 @@ V.admin=()=>{
     <button class="btn ghost sm" id="discardBtn" onclick="discard()" ${draftDirty?"":"disabled"}>Discard</button>
     <button class="btn sm" id="pubBtn" onclick="publish()" ${draftDirty&&!readOnly?"":"disabled"}>Publish to site</button>${host?.signOutUrl?`<a class="btn ghost sm" href="${esc(host.signOutUrl)}">Sign out</a>`:""}</div>
   ${artifact?"":`<div class="note">Publishing isn't connected in this view, so changes stay in this browser.</div>`}
+  <div class="errbox" id="errbox" role="alert" style="display:none"></div>
   <div class="adm">
     ${sideNav()}
     <div id="form">${formHTML}</div>
@@ -1318,7 +1321,7 @@ async function publish(){
     else if(c==="capability_disabled"||c==="capability_removed")toast("Publishing isn't available in this view. Open the site in claude.ai while it isn't shared by public link, or use the hosted version.");
     else if(c==="rate_limited")toast("Publishing too often. Wait a minute, then publish again.");
     else if(c==="too_large")toast("The site data is too large to publish. Shorten some posts.");
-    else toast("Publishing failed. Your draft is kept; try again in a moment.");
+    else showError((e?.message&&!/^[a-z_]+$/.test(e.message)?e.message+" ":"")+"Your draft is kept.");
     if(b){b.disabled=false;b.textContent="Publish to site"}
   }
 }
@@ -1532,7 +1535,8 @@ function accessHTML(){
     <form class="acc-add" onsubmit="accAdd(event)"><input type="email" id="acc-email" placeholder="name@gmail.com" required><select id="acc-role"><option value="editor">Editor</option><option value="admin">Admin</option></select><button class="btn sm">Add person</button></form>
     <p class="help" style="margin-top:12px">Changes apply straight away, no publishing needed. Owners come from the ADMIN_EMAILS setting in Vercel and can't be removed here.</p>`;
 }
-async function accSave(fn,msg){try{const j=await fn();acc.people=j.people||acc.people;render();toast(msg)}catch(e){toast(e?.code==="not_writer"?"Only Admins can change access.":"That didn't save. Try again.")}}
+async function accSave(fn,msg){try{const j=await fn();acc.people=j.people||acc.people;render();toast(msg)}catch(e){showError(e?.code==="not_writer"?"Only Admins can change access.":(e?.message&&e.message!=="upstream_error"?e.message:"That didn't save. Try again."))}}
+function showError(m){const el=document.getElementById("errbox");if(!el){toast(m);return}el.innerHTML=`<b>Couldn't save.</b> ${esc(m)} <button class="mini" onclick="this.parentElement.style.display='none'">Dismiss</button>`;el.style.display="block";el.scrollIntoView({behavior:"smooth",block:"center"})}
 function accAdd(e){e.preventDefault();const email=document.getElementById("acc-email").value.trim().toLowerCase(),role=document.getElementById("acc-role").value;if(!email)return;accSave(()=>accessApi.set(email,role),`Added ${email} as ${role}`)}
 function accSet(email,role){accSave(()=>accessApi.set(email,role),`${email} is now ${role==="admin"?"an Admin":"an Editor"}`)}
 function accRemove(email,b){if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent="Confirm";setTimeout(()=>{if(b.isConnected){b.dataset.sure="";b.textContent="Remove"}},2500);return}accSave(()=>accessApi.remove(email),`Removed ${email}`)}

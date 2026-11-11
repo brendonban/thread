@@ -40,6 +40,7 @@ export async function roleOf(email?: string | null): Promise<Role | null> {
 
 /** Applies a change and commits it. Retries once if someone else saved at the same moment. */
 export async function changeAccess(by: string, fn: (people: Person[]) => Person[]): Promise<Person[]> {
+  if (!siteRepo() || !process.env.GITHUB_TOKEN) throw new GitHubError(0, "not configured");
   for (let attempt = 0; attempt < 2; attempt++) {
     const { people, sha } = await loadAccess(true);
     const next = fn(people.map((p) => ({ ...p })));

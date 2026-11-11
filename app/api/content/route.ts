@@ -1,5 +1,5 @@
 import { adminEmail, deny } from "@/lib/admin";
-import { putFile, siteRepo, GitHubError } from "@/lib/github";
+import { putFile, siteRepo, GitHubError, explainGitHub } from "@/lib/github";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +32,6 @@ export async function POST(req: Request) {
     return Response.json({ version: out?.commit?.sha ?? "" });
   } catch (e) {
     const status = e instanceof GitHubError && e.status === 409 ? 409 : 502;
-    return Response.json({ error: "Could not save to GitHub." }, { status });
+    return Response.json({ error: explainGitHub(e) }, { status });
   }
 }

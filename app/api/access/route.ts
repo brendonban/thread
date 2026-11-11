@@ -1,5 +1,6 @@
 import { accessManagerEmail, deny } from "@/lib/admin";
 import { loadAccess, owners, changeAccess } from "@/lib/access";
+import { explainGitHub } from "@/lib/github";
 
 export const dynamic = "force-dynamic";
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -10,8 +11,8 @@ export async function GET() {
   try {
     const { people } = await loadAccess(true);
     return Response.json({ owners: owners(), people });
-  } catch {
-    return Response.json({ error: "Could not read access settings." }, { status: 502 });
+  } catch (e) {
+    return Response.json({ error: explainGitHub(e) }, { status: 502 });
   }
 }
 
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
       return [...rest, { email, role, addedBy: old?.addedBy || by, addedAt: old?.addedAt || Date.now() }].sort((a, b) => a.email.localeCompare(b.email));
     });
     return Response.json({ owners: owners(), people });
-  } catch {
-    return Response.json({ error: "Could not save access settings." }, { status: 502 });
+  } catch (e) {
+    return Response.json({ error: explainGitHub(e) }, { status: 502 });
   }
 }

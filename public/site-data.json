@@ -284,23 +284,24 @@
   },
   "team": [
     {
-      "name": "Associate Professor Dr. Lau Poh Li",
+      "name": "Assoc. Prof. Dr. Lau Poh Li",
       "group": "Supervisors",
       "color": "Auto",
       "role": "Supervisor",
       "aff": "Department of Educational Psychology & Counseling",
-      "bio": "[What the supervisor oversees on the program.]",
+      "bio": "She has a Ph.D. in Counseling (UM). She completed a 2-year post-doctoral scholarship in counseling psychology at Indiana University Bloomington, USA. Her research interests include career counseling, positive psychology, resilience, cross-cultural and well-being. She received the 2025 APCDA Outstanding Educator of Career Professionals Award. She is also President elected for APCDA.",
       "email": "janicepolly@um.edu.my",
       "web": "",
       "linkedin": "",
-      "photo": ""
+      "photo": "",
+      "cv": "https://umexpert.um.edu.my/janicepolly"
     },
     {
       "name": "Brendon Ban",
       "group": "Research team",
       "color": "Auto",
-      "role": "[Role]",
-      "aff": "[Programme, Department]",
+      "role": "PI",
+      "aff": "Master's student, Universiti Malaya",
       "bio": "[Short bio: background, and what you lead on THREAD.]",
       "email": "22059169@siswa.um.edu.my",
       "web": "https://brendonban.io",

@@ -184,13 +184,6 @@
       "hidden": true
     },
     {
-      "id": "sexual-risk",
-      "name": "Sexual risk behaviour",
-      "short": "Sexual practices, testing and the choices people make about prevention.",
-      "body": "We study how people think about sexual risk, testing and prevention, and how culture, relationships and stigma shape those choices.",
-      "hidden": false
-    },
-    {
       "id": "ageing",
       "name": "Ageing with HIV",
       "short": "Growing older with HIV, and the care and support that ageing brings.",
@@ -208,6 +201,13 @@
       "name": "Chemsex",
       "short": "Sexualised drug use: experiences, harms, pleasure and support.",
       "body": "Chemsex is the use of drugs to enhance or prolong sex. We explore people's experiences of it, the risks for HIV, other infections and mental health, and what kinds of support people find acceptable.\n\n[Add what your team is focusing on in this theme.]",
+      "hidden": true
+    },
+    {
+      "id": "sexual-risk",
+      "name": "Sexual risk behaviour",
+      "short": "Sexual practices, testing and the choices people make about prevention.",
+      "body": "We study how people think about sexual risk, testing and prevention, and how culture, relationships and stigma shape those choices.\n\n[Add what your team is focusing on in this theme.]",
       "hidden": true
     },
     {
@@ -246,8 +246,7 @@
       "collaborators": "PT Foundation",
       "publications": "",
       "people": [
-        "Brendon Ban",
-        "Assoc. Prof. Dr. Lau Poh Li"
+        "Brendon Ban"
       ],
       "featured": true,
       "theme": "ageing",
@@ -362,6 +361,21 @@
       "web": "",
       "linkedin": "https://www.linkedin.com/in/grace-natalie-3506b5253?utm_source=share_via&utm_content=profile&utm_medium=member_ios",
       "photo": ""
+    },
+    {
+      "name": "Ellern Eng Hui",
+      "group": "Research team",
+      "color": "Kunyit",
+      "role": "Co-I",
+      "aff": "Independent Researcher",
+      "bio": "",
+      "email": "ellern.eh01@gmail.com",
+      "web": "",
+      "linkedin": "https://www.linkedin.com/in/ellern01/",
+      "photo": "",
+      "orcid": "0009-0006-7945-1243",
+      "researchgate": "https://www.researchgate.net/profile/Ellern_Eng_Hui",
+      "scholar": "https://scholar.google.com/citations?user=7qkIr_8AAAAJ&hl=en"
     }
   ],
   "pubs": [

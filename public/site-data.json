@@ -208,7 +208,7 @@
       "name": "Sexual risk behaviour",
       "short": "Sexual practices, testing and the choices people make about prevention.",
       "body": "We study how people think about sexual risk, testing and prevention, and how culture, relationships and stigma shape those choices.\n\n[Add what your team is focusing on in this theme.]",
-      "hidden": true
+      "hidden": false
     },
     {
       "id": "prep",

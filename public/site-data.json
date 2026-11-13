@@ -83,10 +83,10 @@
   ],
   "collabPeople": [
     {
-      "name": "[Name]",
+      "name": "Ridwan Yusoff",
       "url": "",
-      "desc": "[Title, organisation]",
-      "hidden": true
+      "desc": "Programme Manager, PT Foundation",
+      "hidden": false
     }
   ],
   "nav": {

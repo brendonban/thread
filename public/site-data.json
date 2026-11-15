@@ -402,7 +402,19 @@
       "hidden": false
     }
   ],
-  "posts": [],
+  "posts": [
+    {
+      "id": "post-emvt8",
+      "cover": "",
+      "coverCaption": "",
+      "title": "New post",
+      "date": "2026-11-14",
+      "author": "Brendon Ban",
+      "dek": "",
+      "tags": "",
+      "body": ""
+    }
+  ],
   "opps": [
     {
       "title": "Research Assistant",

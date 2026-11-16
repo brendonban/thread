@@ -167,10 +167,10 @@
       "logo": "/uploads/1794384506416-malaysian-aids-council.png"
     },
     {
-      "name": "[Collaborator 3]",
-      "url": "",
-      "logo": "",
-      "hidden": true
+      "name": "AIESEC in Malaysia",
+      "url": "https://www.aiesec.my/",
+      "logo": "/uploads/1794819115940-aiesec-logo.png",
+      "hidden": false
     },
     {
       "name": "[Collaborator 4]",

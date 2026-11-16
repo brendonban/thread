@@ -417,7 +417,7 @@
       "email": "",
       "web": "",
       "linkedin": "",
-      "photo": "/uploads/1794830996233-portrait.png"
+      "photo": "/uploads/1794830835210-portrait.png"
     },
     {
       "name": "Yap Lik Ken",
@@ -430,6 +430,18 @@
       "web": "",
       "linkedin": "linkedin.com/in/likken-yap-8b993a20a",
       "photo": "/uploads/1794830680976-portrait.png"
+    },
+    {
+      "name": "Zuo Han",
+      "group": "Research team",
+      "color": "Auto",
+      "role": "RA",
+      "aff": "Universiti Malaya",
+      "bio": "",
+      "email": "",
+      "web": "",
+      "linkedin": "",
+      "photo": ""
     },
     {
       "name": "Branson Ban",

@@ -283,6 +283,24 @@
         "Yap Lik Ken"
       ],
       "featured": true
+    },
+    {
+      "id": "project-heartbeat",
+      "title": "Heartbeat",
+      "theme": "stigma-and-discrimination",
+      "status": "Planned",
+      "start": "2026-10",
+      "end": "",
+      "published": "",
+      "summary": "",
+      "body": "",
+      "funding": "",
+      "collaborators": "",
+      "publications": "",
+      "people": [
+        "Brendon Ban"
+      ],
+      "featured": false
     }
   ],
   "timeline": {

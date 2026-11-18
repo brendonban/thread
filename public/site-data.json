@@ -110,7 +110,7 @@
     },
     "publications": {
       "label": "Publications",
-      "show": false
+      "show": true
     },
     "blog": {
       "label": "Blog",

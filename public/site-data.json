@@ -471,6 +471,20 @@
       "projects": [],
       "selected": false,
       "hidden": false
+    },
+    {
+      "year": "2027",
+      "type": "Conference talk",
+      "status": "Accepted",
+      "title": "Threads of Dignity: Career Counseling for PLHIV through the Lens of Malaysian Batik Heritage",
+      "authors": "Ban, B. R. J., Gan, B. W. J., & Lau, P. L.",
+      "venue": "Temasek Polytechnic, Singapore",
+      "doi": "",
+      "link": "",
+      "tags": "",
+      "themes": [
+        "plhiv"
+      ]
     }
   ],
   "posts": [

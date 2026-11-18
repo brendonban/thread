@@ -282,7 +282,8 @@
         "Brendon Ban",
         "Yap Lik Ken"
       ],
-      "featured": true
+      "featured": true,
+      "hidden": true
     },
     {
       "id": "project-heartbeat",
@@ -300,7 +301,8 @@
       "people": [
         "Brendon Ban"
       ],
-      "featured": false
+      "featured": false,
+      "hidden": true
     }
   ],
   "timeline": {

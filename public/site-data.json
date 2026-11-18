@@ -458,21 +458,6 @@
   ],
   "pubs": [
     {
-      "year": "2026",
-      "type": "Protocol",
-      "status": "Published",
-      "title": "vvv",
-      "authors": "",
-      "venue": "",
-      "doi": "",
-      "link": "",
-      "tags": "",
-      "themes": [],
-      "projects": [],
-      "selected": false,
-      "hidden": false
-    },
-    {
       "year": "2027",
       "type": "Conference talk",
       "status": "Accepted",

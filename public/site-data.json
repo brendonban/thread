@@ -1,7 +1,7 @@
 {
   "site": {
     "title": "THREAD",
-    "acronym": "[What THREAD stands for]",
+    "acronym": "What THREAD stands for",
     "institution": "Universiti Malaya",
     "department": "Department of Educational Psychology & Counseling",
     "question": "How do culture, faith, family and stigma shape the way people in Malaysia test for, talk about and live with HIV?",
@@ -83,20 +83,10 @@
   ],
   "collabPeople": [
     {
-      "name": "Muhammad Ishak",
-      "url": "linkedin.com/in/muhammad-ishak-h-46a537105",
-      "desc": "Project Coordinator, Malaysian AIDS Foundation"
-    },
-    {
-      "name": "Ridwan Yusoff",
+      "name": "[Name]",
       "url": "",
-      "desc": "Programme Manager, PT Foundation",
-      "hidden": false
-    },
-    {
-      "name": "Mohammad Hafzan Fazli bin Salman",
-      "url": "",
-      "desc": "Director of Exchange & Experience, AIESEC in UPM"
+      "desc": "[Title, organisation]",
+      "hidden": true
     }
   ],
   "nav": {
@@ -110,7 +100,7 @@
     },
     "publications": {
       "label": "Publications",
-      "show": true
+      "show": false
     },
     "blog": {
       "label": "Blog",
@@ -167,10 +157,10 @@
       "logo": "/uploads/1794384506416-malaysian-aids-council.png"
     },
     {
-      "name": "AIESEC in Malaysia",
-      "url": "https://www.aiesec.my/",
-      "logo": "/uploads/1794819115940-aiesec-logo.png",
-      "hidden": false
+      "name": "[Collaborator 3]",
+      "url": "",
+      "logo": "",
+      "hidden": true
     },
     {
       "name": "[Collaborator 4]",
@@ -194,6 +184,13 @@
       "hidden": true
     },
     {
+      "id": "sexual-risk",
+      "name": "Sexual risk behaviour",
+      "short": "Sexual practices, testing and the choices people make about prevention.",
+      "body": "We study how people think about sexual risk, testing and prevention, and how culture, relationships and stigma shape those choices.",
+      "hidden": false
+    },
+    {
       "id": "ageing",
       "name": "Ageing with HIV",
       "short": "Growing older with HIV, and the care and support that ageing brings.",
@@ -212,13 +209,6 @@
       "short": "Sexualised drug use: experiences, harms, pleasure and support.",
       "body": "Chemsex is the use of drugs to enhance or prolong sex. We explore people's experiences of it, the risks for HIV, other infections and mental health, and what kinds of support people find acceptable.\n\n[Add what your team is focusing on in this theme.]",
       "hidden": true
-    },
-    {
-      "id": "sexual-risk",
-      "name": "Sexual risk behaviour",
-      "short": "Sexual practices, testing and the choices people make about prevention.",
-      "body": "We study how people think about sexual risk, testing and prevention, and how culture, relationships and stigma shape those choices.\n\n[Add what your team is focusing on in this theme.]",
-      "hidden": false
     },
     {
       "id": "prep",
@@ -244,7 +234,7 @@
   ],
   "projects": [
     {
-      "id": "project-1",
+      "id": "growing-older-living-well",
       "title": "Growing Older, Living Well: Quality of Life Among People Ageing With HIV in Malaysia",
       "status": "Ethics review",
       "start": "2026-12",
@@ -257,8 +247,7 @@
       "publications": "",
       "people": [
         "Brendon Ban",
-        "Assoc. Prof. Dr. Lau Poh Li",
-        "Ellern Eng Hui"
+        "Assoc. Prof. Dr. Lau Poh Li"
       ],
       "featured": true,
       "theme": "ageing",
@@ -282,27 +271,7 @@
         "Brendon Ban",
         "Yap Lik Ken"
       ],
-      "featured": true,
-      "hidden": true
-    },
-    {
-      "id": "project-heartbeat",
-      "title": "Heartbeat",
-      "theme": "stigma-and-discrimination",
-      "status": "Planned",
-      "start": "2026-10",
-      "end": "",
-      "published": "",
-      "summary": "",
-      "body": "",
-      "funding": "",
-      "collaborators": "",
-      "publications": "",
-      "people": [
-        "Brendon Ban"
-      ],
-      "featured": false,
-      "hidden": true
+      "featured": true
     }
   ],
   "timeline": {
@@ -371,57 +340,6 @@
       "researchgate": "https://www.researchgate.net/profile/Brendon-Ren-Jie-Ban?ev=hdr_xprf"
     },
     {
-      "name": "Benjamin Gan",
-      "group": "Research team",
-      "color": "Auto",
-      "role": "Co-I",
-      "aff": "Master's student, Universiti Malaya",
-      "bio": "",
-      "email": "s2033266@siswa.um.edu.my",
-      "web": "",
-      "linkedin": "",
-      "photo": ""
-    },
-    {
-      "name": "Ellern Eng Hui",
-      "group": "Research team",
-      "color": "Kunyit",
-      "role": "Co-I",
-      "aff": "Independent Researcher",
-      "bio": "",
-      "email": "ellern.eh01@gmail.com",
-      "web": "",
-      "linkedin": "https://www.linkedin.com/in/ellern01/",
-      "photo": "/uploads/1794830898414-portrait.png",
-      "orcid": "0009-0006-7945-1243",
-      "researchgate": "https://www.researchgate.net/profile/Ellern_Eng_Hui",
-      "scholar": "https://scholar.google.com/citations?user=7qkIr_8AAAAJ&hl=en"
-    },
-    {
-      "name": "Grace Natalie",
-      "group": "Research team",
-      "color": "Auto",
-      "role": "RA",
-      "aff": "Undergraduate Student, Taylor's University",
-      "bio": "",
-      "email": "ngrace0906@gmail.com",
-      "web": "",
-      "linkedin": "https://www.linkedin.com/in/grace-natalie-3506b5253?utm_source=share_via&utm_content=profile&utm_medium=member_ios",
-      "photo": "/uploads/1794830602905-portrait.png"
-    },
-    {
-      "name": "Naomi",
-      "group": "Research team",
-      "color": "Auto",
-      "role": "RA",
-      "aff": "",
-      "bio": "",
-      "email": "",
-      "web": "",
-      "linkedin": "",
-      "photo": "/uploads/1794830835210-portrait.png"
-    },
-    {
       "name": "Yap Lik Ken",
       "group": "Research team",
       "color": "Auto",
@@ -431,74 +349,39 @@
       "email": "24227222@siswa.um.edu.my",
       "web": "",
       "linkedin": "linkedin.com/in/likken-yap-8b993a20a",
-      "photo": "/uploads/1794830680976-portrait.png"
+      "photo": ""
     },
     {
-      "name": "Zuo Han",
+      "name": "Grace Natalie",
       "group": "Research team",
       "color": "Auto",
       "role": "RA",
-      "aff": "Universiti Malaya",
+      "aff": "Undergraduate Student, Taylor's University",
       "bio": "",
-      "email": "",
+      "email": "Ngrace0906@gmail.com",
       "web": "",
-      "linkedin": "",
-      "photo": ""
-    },
-    {
-      "name": "Branson Ban",
-      "group": "Research team",
-      "color": "Auto",
-      "role": "Intern",
-      "aff": "SMK Seri Bintang Selatan",
-      "bio": "",
-      "email": "bransonban@gmail.com",
-      "web": "",
-      "linkedin": "",
-      "photo": ""
-    },
-    {
-      "name": "New person",
-      "group": "Research team",
-      "color": "Auto",
-      "role": "",
-      "aff": "",
-      "bio": "",
-      "email": "",
-      "web": "",
-      "linkedin": "",
+      "linkedin": "https://www.linkedin.com/in/grace-natalie-3506b5253?utm_source=share_via&utm_content=profile&utm_medium=member_ios",
       "photo": ""
     }
   ],
   "pubs": [
     {
-      "year": "2027",
-      "type": "Conference talk",
-      "status": "Accepted",
-      "title": "Threads of Dignity: Career Counseling for PLHIV through the Lens of Malaysian Batik Heritage",
-      "authors": "Ban, B. R. J., Gan, B. W. J., & Lau, P. L.",
-      "venue": "Temasek Polytechnic, Singapore",
+      "year": "2026",
+      "type": "Protocol",
+      "status": "Published",
+      "title": "vvv",
+      "authors": "",
+      "venue": "",
       "doi": "",
       "link": "",
       "tags": "",
-      "themes": [
-        "plhiv"
-      ]
+      "themes": [],
+      "projects": [],
+      "selected": false,
+      "hidden": false
     }
   ],
-  "posts": [
-    {
-      "id": "post-emvt8",
-      "cover": "",
-      "coverCaption": "",
-      "title": "New post",
-      "date": "2026-11-14",
-      "author": "Brendon Ban",
-      "dek": "",
-      "tags": "",
-      "body": ""
-    }
-  ],
+  "posts": [],
   "opps": [
     {
       "title": "Research Assistant",
